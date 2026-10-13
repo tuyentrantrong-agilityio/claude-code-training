@@ -15,3 +15,7 @@ cd day-02
 python -m auction.demo                                # reproduce the bug
 python -m unittest discover -s tests -t . -v          # 1 test fails on purpose (the bug)
 ```
+
+## Notes
+
+- Remote-side note added from another clone.
