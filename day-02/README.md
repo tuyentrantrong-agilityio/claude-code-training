@@ -1,6 +1,6 @@
 # Day 02
 
-Status: bug reproduced, failing test added
+Status: tickets analysed, bug reproduced + failing test added, git practice done
 
 | File | Exercise |
 |---|---|
