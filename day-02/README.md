@@ -1,6 +1,6 @@
 # Day 02
 
-Status: in progress
+Status: bug reproduced, failing test added
 
 | File | Exercise |
 |---|---|
