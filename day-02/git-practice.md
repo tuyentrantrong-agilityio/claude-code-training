@@ -1,6 +1,8 @@
-# Day 02 — Git practice (branch `day-2`)
+# Day 02 — Git practice (branch `practice`)
 
 "Remote" commits were made from a second clone (`remote-sim`) and pushed to `origin/day-2`, to simulate a teammate.
+
+> The branch was named `day-2` when these outputs were recorded and was later renamed to `practice`, so the command output below still says `day-2`.
 
 ## 1. `git pull --rebase`: a local commit plus a new remote commit
 

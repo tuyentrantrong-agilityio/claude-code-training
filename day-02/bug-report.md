@@ -8,7 +8,7 @@
 
 - OS: Windows 10 Pro 10.0.19045
 - Python 3.14.2 (stdlib only: `sqlite3`, `unittest`; no dependencies to install)
-- Branch `day-2`, folder `day-02/`
+- Branch `practice`, folder `day-02/`
 
 ## Steps to reproduce
 
@@ -17,7 +17,7 @@ From a clean clone:
 ```bash
 git clone git@gitlab.asoft-python.com:tuyen.trantrong/claude-code-training.git
 cd claude-code-training
-git checkout day-2
+git checkout practice
 cd day-02
 python -m auction.demo
 ```
