@@ -3,6 +3,7 @@
 created_at is stored as epoch milliseconds (INTEGER), the same precision the
 real API exposes.
 """
+
 import base64
 import json
 import sqlite3
@@ -35,12 +36,15 @@ def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
     return cur.lastrowid
 
 
-def encode_cursor(created_at):
-    return base64.urlsafe_b64encode(json.dumps({"created_at": created_at}).encode()).decode()
+def encode_cursor(created_at, bid_id):
+    return base64.urlsafe_b64encode(
+        json.dumps({"created_at": created_at, "id": bid_id}).encode()
+    ).decode()
 
 
 def decode_cursor(cursor):
-    return json.loads(base64.urlsafe_b64decode(cursor.encode()))["created_at"]
+    data = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+    return data["created_at"], data["id"]
 
 
 def list_my_bids(conn, user_id, limit=20, cursor=None):
@@ -48,14 +52,21 @@ def list_my_bids(conn, user_id, limit=20, cursor=None):
 
     Response shape mirrors the API: {"items": [...], "next_cursor": str | None}.
     """
-    sql = "SELECT id, auction_id, amount, status, created_at FROM bids WHERE user_id = ?"
+    sql = (
+        "SELECT id, auction_id, amount, status, created_at FROM bids WHERE user_id = ?"
+    )
     params = [user_id]
     if cursor is not None:
-        sql += " AND created_at < ?"
-        params.append(decode_cursor(cursor))
-    sql += " ORDER BY created_at DESC LIMIT ?"
+        sql += " AND (created_at, id) < (?, ?)"
+        params.extend(decode_cursor(cursor))
+
+    sql += " ORDER BY created_at DESC, id DESC LIMIT ?"
     params.append(limit)
 
     items = [dict(r) for r in conn.execute(sql, params)]
-    next_cursor = encode_cursor(items[-1]["created_at"]) if len(items) == limit else None
+    next_cursor = (
+        encode_cursor(items[-1]["created_at"], items[-1]["id"])
+        if len(items) == limit
+        else None
+    )
     return {"items": items, "next_cursor": next_cursor}
