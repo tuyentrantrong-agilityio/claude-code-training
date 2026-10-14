@@ -14,6 +14,7 @@ Status: tickets analysed, bug reproduced + failing test added, git practice done
 cd day-02
 python -m auction.demo                                # reproduce the bug
 python -m unittest discover -s tests -t . -v          # all tests should pass
+python -m unittest discover -s tests -t . -v          # run the 4 pagination tests
 
 ```
 
