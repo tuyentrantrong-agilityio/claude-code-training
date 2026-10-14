@@ -1,4 +1,5 @@
 """Run from day-02/: python -m unittest discover -s tests -t . -v"""
+
 import unittest
 
 from auction.bids import connect, list_my_bids, place_bid
@@ -43,6 +44,15 @@ class CursorPaginationTest(unittest.TestCase):
             place_bid(conn, USER, a, 100, created_at=T)
         ids = fetch_all(conn, limit=4)
         self.assertEqual(len(ids), len(set(ids)))
+
+    def test_many_same_millisecond_bids_across_pages(self):
+        conn = connect()
+        expected = []
+        for a in range(4):
+            expected.append(place_bid(conn, USER, a, 100, created_at=T))
+
+        ids = fetch_all(conn, limit=2)
+        self.assertCountEqual(ids, expected)
 
 
 if __name__ == "__main__":
