@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Training exercises, one folder per day (e.g. `day-02/`). Python stdlib only, no dependencies.
 
 - Run the demo: `cd day-02 && python -m auction.demo`
-- Run tests: `cd day-02 && python -m unittest discover -s tests -t . -v`
+- Run tests: `cd day-02 && python -m unittest discover -s tests -t . -v` (same command in `day-04/`)
 
 ## Conventions
 
@@ -32,3 +32,12 @@ Training exercises, one folder per day (e.g. `day-02/`). Python stdlib only, no 
 - Default branch: `main`
 - Use merge requests (GitLab), not GitHub pull requests; the `gh` CLI does not apply here.
 - Development environment is Windows (PowerShell / Git Bash).
+
+## Never do
+
+- Never push directly to `main` or `practice`; work on a `fix/`, `feat/` or `docs/` branch and open a merge request into `practice`.
+- Never add third-party dependencies; stdlib only.
+- Never change tests to make them pass; fix the code unless the test itself is wrong.
+- Never force push, skip hooks, or rewrite history that is already pushed.
+- Never commit secrets, `.env` files, or generated files such as `__pycache__`.
+- Never commit or push unless asked to.
