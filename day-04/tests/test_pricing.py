@@ -22,6 +22,19 @@ class ApplyDiscountTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             apply_discount(1000, 101)
 
+    def test_negative_price_is_rejected(self):
+        with self.assertRaises(ValueError):
+            apply_discount(-500, 10)
+
+    def test_non_integer_price_is_rejected(self):
+        for price in (9.99, "1000"):
+            with self.subTest(price=price):
+                with self.assertRaises(ValueError):
+                    apply_discount(price, 10)
+
+    def test_zero_price(self):
+        self.assertEqual(apply_discount(0, 10), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
