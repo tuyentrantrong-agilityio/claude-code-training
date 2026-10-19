@@ -25,8 +25,7 @@ class CursorPaginationTest(unittest.TestCase):
         self.assertCountEqual(fetch_all(conn, limit=2), expected)
 
     def test_same_millisecond_bids_are_not_skipped(self):
-        # BUG: bids sharing created_at with the last row of a page are dropped,
-        # because the cursor only keeps created_at and the next page uses "<".
+        # Bids sharing a millisecond across a page boundary must all be returned.
         conn = connect()
         place_bid(conn, USER, 1, 100, created_at=T)
         same_ms = [place_bid(conn, USER, a, 200, created_at=T + 5) for a in (2, 3, 4)]
