@@ -28,10 +28,12 @@ def strip_quoted(command):
 
 
 def check(command):
-    command = strip_quoted(command)
-    for pattern, reason in RULES:
-        if re.search(pattern, command):
-            return reason
+    # Check each chained command on its own, so "git push x; gh pr create --base main"
+    # is not read as a push to main.
+    for part in re.split(r"&&|\|\||[;|\n]", strip_quoted(command)):
+        for pattern, reason in RULES:
+            if re.search(pattern, part):
+                return reason
     return None
 
 
