@@ -8,6 +8,8 @@ import base64
 import json
 import sqlite3
 
+MAX_LIMIT = 100
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS bids (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +53,11 @@ def list_my_bids(conn, user_id, limit=20, cursor=None):
     """Return one page of the user's bids, newest first.
 
     Response shape mirrors the API: {"items": [...], "next_cursor": str | None}.
+    Raises ValueError unless 1 <= limit <= MAX_LIMIT.
     """
+    if not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
+
     sql = (
         "SELECT id, auction_id, amount, status, created_at FROM bids WHERE user_id = ?"
     )

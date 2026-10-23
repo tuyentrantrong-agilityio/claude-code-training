@@ -54,5 +54,26 @@ class CursorPaginationTest(unittest.TestCase):
         self.assertCountEqual(ids, expected)
 
 
+class LimitValidationTest(unittest.TestCase):
+    def setUp(self):
+        self.conn = connect()
+        for a in range(5):
+            place_bid(self.conn, USER, a, 100, created_at=T + a)
+
+    def test_limit_below_one_is_rejected(self):
+        for limit in (0, -1):
+            with self.subTest(limit=limit):
+                with self.assertRaises(ValueError):
+                    list_my_bids(self.conn, USER, limit=limit)
+
+    def test_limit_above_max_is_rejected(self):
+        with self.assertRaises(ValueError):
+            list_my_bids(self.conn, USER, limit=101)
+
+    def test_limit_at_bounds_is_allowed(self):
+        self.assertEqual(len(list_my_bids(self.conn, USER, limit=1)["items"]), 1)
+        self.assertEqual(len(list_my_bids(self.conn, USER, limit=100)["items"]), 5)
+
+
 if __name__ == "__main__":
     unittest.main()
