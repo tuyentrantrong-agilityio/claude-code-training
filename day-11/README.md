@@ -10,7 +10,8 @@ browser session instead of only reading code.
     python -m unittest discover -s tests -t . -v
 
 Endpoints: `GET /`, `GET /api/bids?limit=&cursor=`, `POST /api/bids`.
-Data is in memory and resets on restart.
+Data is in memory and resets on restart. If the page shows old bids, a previous
+server is still holding port 8000; stop it before starting a new one.
 
 ## Browser check with Claude in Chrome
 
