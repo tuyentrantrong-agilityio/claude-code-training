@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My bids</title>
+<style>
+  body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; }
+  label { display: block; margin: .5rem 0; }
+  #error { color: #b00020; min-height: 1.2em; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  td, th { border: 1px solid #ccc; padding: .3rem .5rem; text-align: left; }
+</style>
+</head>
+<body>
+<h1>My bids</h1>
+<form id="bid-form">
+  <label>Auction ID <input id="auction_id" name="auction_id" type="text"></label>
+  <label>Amount <input id="amount" name="amount" type="text"></label>
+  <button type="submit" id="place">Place bid</button>
+</form>
+<p id="error" role="alert"></p>
+<label>Page size <input id="limit" type="text" value="2"></label>
+<button id="reload">Reload</button>
+<table>
+  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<button id="more" hidden>Load more</button>
+<script>
+let nextCursor = null;
+const $ = (id) => document.getElementById(id);
+
+function showError(msg) {
+  $("error").textContent = msg;
+  if (msg) console.error("ui error:", msg);
+}
+
+async function load(reset) {
+  if (reset) { nextCursor = null; $("rows").innerHTML = ""; $("more").hidden = true; }
+  const params = new URLSearchParams({ limit: $("limit").value });
+  if (nextCursor) params.set("cursor", nextCursor);
+  const res = await fetch("/api/bids?" + params);
+  const data = await res.json();
+  if (!res.ok) { showError(data.error); return; }
+  showError("");
+  for (const b of data.items) {
+    const tr = document.createElement("tr");
+    for (const v of [b.id, b.auction_id, b.amount, b.status]) {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.appendChild(td);
+    }
+    $("rows").appendChild(tr);
+  }
+  nextCursor = data.next_cursor;
+  $("more").hidden = !nextCursor;
+  console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
+}
+
+$("bid-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const res = await fetch("/api/bids", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ auction_id: $("auction_id").value, amount: $("amount").value }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showError(data.error); return; }
+  console.log("placed bid", data.id);
+  load(true);
+});
+$("reload").addEventListener("click", () => load(true));
+$("more").addEventListener("click", () => load(false));
+load(true);
+</script>
+</body>
+</html>
