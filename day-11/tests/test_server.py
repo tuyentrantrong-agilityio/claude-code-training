@@ -37,6 +37,17 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["items"][0]["amount"], 150)
 
+    def test_low_bid_rejected_with_409(self):
+        self.call("/api/bids", {"auction_id": "7", "amount": "150"})
+        status, body = self.call("/api/bids", {"auction_id": "7", "amount": "150"})
+        self.assertEqual(status, 409)
+        self.assertEqual(body["error"], "bid must be higher than 150")
+
+    def test_list_includes_standing(self):
+        self.call("/api/bids", {"auction_id": "7", "amount": "150"})
+        _, body = self.call("/api/bids?limit=10")
+        self.assertEqual(body["items"][0]["standing"], "winning")
+
     def test_pagination_walks_all_bids(self):
         for i in range(1, 6):
             self.call("/api/bids", {"auction_id": i, "amount": 10 * i})

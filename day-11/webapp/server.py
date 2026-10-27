@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
-from auction.bids import SCHEMA, list_my_bids, place_bid  # noqa: E402
+from auction.bids import SCHEMA, BidTooLowError, list_my_bids, place_bid  # noqa: E402
 
 USER = 42
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
@@ -59,7 +59,10 @@ def make_server(port=8000):
             if auction_id < 1 or amount < 1:
                 return self._send(400, {"error": "auction_id and amount must be positive"})
             now = int(time.time() * 1000)
-            bid_id = place_bid(conn, USER, auction_id, amount, now)
+            try:
+                bid_id = place_bid(conn, USER, auction_id, amount, now)
+            except BidTooLowError as exc:
+                return self._send(409, {"error": str(exc)})
             self._send(201, {"id": bid_id})
 
     return ThreadingHTTPServer(("127.0.0.1", port), Handler)
