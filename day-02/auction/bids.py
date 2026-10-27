@@ -29,7 +29,26 @@ def connect(path=":memory:"):
     return conn
 
 
+class BidTooLowError(ValueError):
+    def __init__(self, highest):
+        super().__init__(f"bid must be higher than {highest}")
+        self.highest = highest
+
+
+def highest_bid(conn, auction_id):
+    """Top active bid of an auction (highest amount, then earliest), or None."""
+    return conn.execute(
+        "SELECT id, amount FROM bids WHERE auction_id = ? AND status = 'active' "
+        "ORDER BY amount DESC, created_at ASC, id ASC LIMIT 1",
+        (auction_id,),
+    ).fetchone()
+
+
 def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
+    """Store a bid. Raises BidTooLowError unless it beats the auction's highest bid."""
+    top = highest_bid(conn, auction_id)
+    if top is not None and amount <= top["amount"]:
+        raise BidTooLowError(top["amount"])
     cur = conn.execute(
         "INSERT INTO bids (user_id, auction_id, amount, status, created_at) VALUES (?, ?, ?, ?, ?)",
         (user_id, auction_id, amount, status, created_at),
@@ -70,6 +89,9 @@ def list_my_bids(conn, user_id, limit=20, cursor=None):
     params.append(limit)
 
     items = [dict(r) for r in conn.execute(sql, params)]
+    for item in items:
+        top = highest_bid(conn, item["auction_id"])
+        item["standing"] = "winning" if top and top["id"] == item["id"] else "outbid"
     next_cursor = (
         encode_cursor(items[-1]["created_at"], items[-1]["id"])
         if len(items) == limit

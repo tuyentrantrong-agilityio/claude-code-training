@@ -19,10 +19,11 @@
   <button type="submit" id="place">Place bid</button>
 </form>
 <p id="error" role="alert"></p>
+<p id="outbid-banner" role="status" style="color:#b00020"></p>
 <label>Page size <input id="limit" type="text" value="2"></label>
 <button id="reload">Reload</button>
 <table>
-  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th></tr></thead>
+  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th></tr></thead>
   <tbody id="rows"></tbody>
 </table>
 <button id="more" hidden>Load more</button>
@@ -35,6 +36,24 @@ function showError(msg) {
   if (msg) console.error("ui error:", msg);
 }
 
+// Last known standing per auction, kept in the browser between page loads.
+function readSeen() {
+  try { return JSON.parse(localStorage.getItem("standing") || "{}"); } catch (e) { return {}; }
+}
+
+function checkOutbid(items) {
+  const seen = readSeen();
+  const lost = [];
+  for (const b of items) {
+    if (seen[b.auction_id] === "winning" && b.standing === "outbid") lost.push(b.auction_id);
+    seen[b.auction_id] = b.standing;
+  }
+  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (e) {}
+  const msg = [...new Set(lost)].map((a) => "You were outbid on auction " + a).join(". ");
+  if (msg) $("outbid-banner").textContent = msg;
+  else if (items.length) $("outbid-banner").textContent = "";
+}
+
 async function load(reset) {
   if (reset) { nextCursor = null; $("rows").innerHTML = ""; $("more").hidden = true; }
   const params = new URLSearchParams({ limit: $("limit").value });
@@ -45,13 +64,16 @@ async function load(reset) {
   showError("");
   for (const b of data.items) {
     const tr = document.createElement("tr");
-    for (const v of [b.id, b.auction_id, b.amount, b.status]) {
+    for (const v of [b.id, b.auction_id, b.amount, b.status, b.standing === "winning" ? "Winning" : "Outbid"]) {
       const td = document.createElement("td");
       td.textContent = v;
+      if (v === "Winning") td.style.color = "#1b7f3b";
+      if (v === "Outbid") td.style.color = "#b00020";
       tr.appendChild(td);
     }
     $("rows").appendChild(tr);
   }
+  checkOutbid(data.items);
   nextCursor = data.next_cursor;
   $("more").hidden = !nextCursor;
   console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
@@ -67,6 +89,10 @@ $("bid-form").addEventListener("submit", async (e) => {
   const data = await res.json();
   if (!res.ok) { showError(data.error); return; }
   console.log("placed bid", data.id);
+  // Own new bid is not an "outbid by someone else" event.
+  const seen = readSeen();
+  delete seen[$("auction_id").value];
+  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
   load(true);
 });
 $("reload").addEventListener("click", () => load(true));
