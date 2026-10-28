@@ -45,15 +45,19 @@ def highest_bid(conn, auction_id):
 
 
 def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
-    """Store a bid. Raises BidTooLowError unless it beats the auction's highest bid."""
-    top = highest_bid(conn, auction_id)
-    if top is not None and amount <= top["amount"]:
-        raise BidTooLowError(top["amount"])
+    """Store a bid. Raises BidTooLowError unless it beats the auction's highest bid.
+
+    The check and the insert are one statement, so concurrent bids cannot both pass.
+    """
     cur = conn.execute(
-        "INSERT INTO bids (user_id, auction_id, amount, status, created_at) VALUES (?, ?, ?, ?, ?)",
-        (user_id, auction_id, amount, status, created_at),
+        "INSERT INTO bids (user_id, auction_id, amount, status, created_at) "
+        "SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS ("
+        "SELECT 1 FROM bids WHERE auction_id = ? AND status = 'active' AND amount >= ?)",
+        (user_id, auction_id, amount, status, created_at, auction_id, amount),
     )
     conn.commit()
+    if cur.rowcount == 0:
+        raise BidTooLowError(highest_bid(conn, auction_id)["amount"])
     return cur.lastrowid
 
 
