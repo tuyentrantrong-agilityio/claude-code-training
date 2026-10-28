@@ -39,3 +39,15 @@ As a bidder, I want a hint when I was beaten since I last looked, so that I can 
   server storage for now.
 - Accepted limit: the web UI has one fixed user, so the banner is checked by
   setting localStorage by hand.
+
+## Browser check (Day 13)
+
+- Found: the banner showed on the very first load with no history, because rows
+  of one auction were compared with each other (a winning bid, then an older
+  outbid bid on the same auction).
+- Fix: the check uses its own request (limit 100), an auction counts as winning
+  if any bid on it is winning, and it is compared with the stored standing
+  from the previous load.
+- Re-checked in the browser: no banner on first or second load, banner shown when
+  the API answer is mocked as outbid, no banner after placing an own higher bid.
+  Limit: only the first 100 bids are checked.
