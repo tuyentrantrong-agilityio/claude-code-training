@@ -18,7 +18,15 @@ Today a bid has no information about other bidders' standing.
 2. The web table shows the standing per row.
 3. Placing a bid is rejected unless amount is greater than the current highest
    amount of that auction (any user). First bid on an auction: any amount >= 1.
-4. Existing rules unchanged: limit 1..100, cursor pagination on (created_at, id).
+4. The check in 3 and the insert are one atomic step: if several equal bids
+   arrive at the same time, exactly one is stored.
+5. A user may outbid themselves. Only bids with status 'active' count when
+   finding the highest bid; any other bid is shown as `outbid`.
+6. A rejected bid returns HTTP 409 with "bid must be higher than <highest>".
+7. The page shows an in-page banner "You were outbid on auction N" when a bid
+   that was `winning` at the last load is now `outbid`. The last known standing
+   is kept in the browser (localStorage).
+8. Existing rules unchanged: limit 1..100, cursor pagination on (created_at, id).
 
 ## Not in scope
 

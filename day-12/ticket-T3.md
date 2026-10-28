@@ -36,3 +36,11 @@ rejected, so that nobody places a silly bid.
 - Q7: HTTP 409, message "bid must be higher than <highest>".
 - Existing tests all use one bid per auction, so they pass unchanged.
 - Tests: day-02/tests/test_bid_standing.py, day-11/tests/test_server.py.
+
+## BA reply (Day 13)
+
+- Q5 confirmed: a user may outbid themselves.
+- Q7 confirmed: HTTP 409, message "bid must be higher than <highest>".
+- Existing tests stay unchanged and must keep passing.
+- New criterion: when several equal bids arrive at the same time, exactly one
+  is stored and the others are rejected (done in MR !16).

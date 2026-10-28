@@ -36,3 +36,8 @@ so that I know at a glance if I am winning.
 - Q6: only bids with status 'active' count when finding the highest bid; a
   non-active bid is shown as `outbid`.
 - Tests: day-02/tests/test_bid_standing.py (new file, existing tests untouched).
+
+## BA reply (Day 13)
+
+- Q6 confirmed: only 'active' bids count for the highest bid. A bid that is not
+  active is shown as `outbid`.
