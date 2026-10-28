@@ -41,15 +41,20 @@ function readSeen() {
   try { return JSON.parse(localStorage.getItem("standing") || "{}"); } catch (e) { return {}; }
 }
 
-function checkOutbid(items) {
-  const seen = readSeen();
-  const lost = [];
+// An auction is "winning" if any of the user's bids on it is the top one.
+// Uses its own request (max page size) so paging does not hide a winning bid.
+async function checkOutbid() {
+  const res = await fetch("/api/bids?limit=100");
+  if (!res.ok) return;
+  const { items } = await res.json();
+  const now = {};
   for (const b of items) {
-    if (seen[b.auction_id] === "winning" && b.standing === "outbid") lost.push(b.auction_id);
-    seen[b.auction_id] = b.standing;
+    now[b.auction_id] = now[b.auction_id] === "winning" || b.standing === "winning" ? "winning" : "outbid";
   }
-  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (e) {}
-  const msg = [...new Set(lost)].map((a) => "You were outbid on auction " + a).join(". ");
+  const seen = readSeen();
+  const lost = Object.keys(now).filter((a) => seen[a] === "winning" && now[a] === "outbid");
+  try { localStorage.setItem("standing", JSON.stringify({ ...seen, ...now })); } catch (e) {}
+  const msg = lost.map((a) => "You were outbid on auction " + a).join(". ");
   if (msg) $("outbid-banner").textContent = msg;
   else if (items.length) $("outbid-banner").textContent = "";
 }
@@ -73,7 +78,7 @@ async function load(reset) {
     }
     $("rows").appendChild(tr);
   }
-  checkOutbid(data.items);
+  if (reset) checkOutbid();
   nextCursor = data.next_cursor;
   $("more").hidden = !nextCursor;
   console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
