@@ -32,3 +32,10 @@ As a bidder, I want a hint when I was beaten since I last looked, so that I can 
   the UI by another bidder; only the logic is in place. Manual check: in the
   browser console set localStorage standing to {"7":"winning"} for a bid that
   is outbid, then Reload.
+
+## BA reply (Day 13)
+
+- "Last view" stays in the browser (localStorage) and survives a reload. No
+  server storage for now.
+- Accepted limit: the web UI has one fixed user, so the banner is checked by
+  setting localStorage by hand.

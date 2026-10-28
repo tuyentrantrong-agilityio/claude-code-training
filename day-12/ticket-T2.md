@@ -29,3 +29,7 @@ As a bidder, I want to see "Winning" or "Outbid" on each row of My Bids.
 
 - Q8: labels "Winning" (green) and "Outbid" (red), text always shown.
 - Not covered by automated tests (HTML); needs a manual browser check.
+
+## BA reply (Day 13)
+
+- Q8 confirmed: "Winning" green and "Outbid" red, word always shown.
