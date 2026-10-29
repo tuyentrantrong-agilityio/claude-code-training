@@ -21,7 +21,7 @@ Today a bid has no information about other bidders' standing.
 4. The check in 3 and the insert are one atomic step: if several equal bids
    arrive at the same time, exactly one is stored.
 5. A user may outbid themselves. Only bids with status 'active' count when
-   finding the highest bid; any other bid is shown as `outbid`.
+   finding the highest bid; any other bid has no standing (`null`, shown as "-").
 6. A rejected bid returns HTTP 409 with "bid must be higher than <highest>".
 7. The page shows an in-page banner "You were outbid on auction N" when a bid
    that was `winning` at the last load is now `outbid`. The last known standing

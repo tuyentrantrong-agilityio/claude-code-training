@@ -43,12 +43,19 @@ function readSeen() {
 
 // An auction is "winning" if any of the user's bids on it is the top one.
 // Uses its own request (max page size) so paging does not hide a winning bid.
+let checkSeq = 0;
 async function checkOutbid() {
-  const res = await fetch("/api/bids?limit=100");
-  if (!res.ok) return;
-  const { items } = await res.json();
+  const mySeq = ++checkSeq;
+  let items;
+  try {
+    const res = await fetch("/api/bids?limit=100");
+    if (!res.ok) return;
+    ({ items } = await res.json());
+  } catch (e) { return; }
+  if (mySeq !== checkSeq) return;
   const now = {};
   for (const b of items) {
+    if (!b.standing) continue;
     now[b.auction_id] = now[b.auction_id] === "winning" || b.standing === "winning" ? "winning" : "outbid";
   }
   const seen = readSeen();
@@ -59,17 +66,20 @@ async function checkOutbid() {
   else if (items.length) $("outbid-banner").textContent = "";
 }
 
+let loadSeq = 0;
 async function load(reset) {
+  const mySeq = ++loadSeq;
   if (reset) { nextCursor = null; $("rows").innerHTML = ""; $("more").hidden = true; }
   const params = new URLSearchParams({ limit: $("limit").value });
   if (nextCursor) params.set("cursor", nextCursor);
   const res = await fetch("/api/bids?" + params);
   const data = await res.json();
+  if (mySeq !== loadSeq) return;
   if (!res.ok) { showError(data.error); return; }
   showError("");
   for (const b of data.items) {
     const tr = document.createElement("tr");
-    for (const v of [b.id, b.auction_id, b.amount, b.status, b.standing === "winning" ? "Winning" : "Outbid"]) {
+    for (const v of [b.id, b.auction_id, b.amount, b.status, b.standing === "winning" ? "Winning" : b.standing === "outbid" ? "Outbid" : "-"]) {
       const td = document.createElement("td");
       td.textContent = v;
       if (v === "Winning") td.style.color = "#1b7f3b";
@@ -96,7 +106,7 @@ $("bid-form").addEventListener("submit", async (e) => {
   console.log("placed bid", data.id);
   // Own new bid is not an "outbid by someone else" event.
   const seen = readSeen();
-  delete seen[$("auction_id").value];
+  delete seen[String(parseInt($("auction_id").value, 10))];
   try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
   load(true);
 });

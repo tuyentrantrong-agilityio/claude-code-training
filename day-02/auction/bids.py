@@ -95,7 +95,10 @@ def list_my_bids(conn, user_id, limit=20, cursor=None):
     items = [dict(r) for r in conn.execute(sql, params)]
     for item in items:
         top = highest_bid(conn, item["auction_id"])
-        item["standing"] = "winning" if top and top["id"] == item["id"] else "outbid"
+        if item["status"] != "active":
+            item["standing"] = None
+        else:
+            item["standing"] = "winning" if top and top["id"] == item["id"] else "outbid"
     next_cursor = (
         encode_cursor(items[-1]["created_at"], items[-1]["id"])
         if len(items) == limit

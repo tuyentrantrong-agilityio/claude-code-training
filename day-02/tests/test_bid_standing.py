@@ -52,6 +52,10 @@ class StandingTest(unittest.TestCase):
         bid = place_bid(self.conn, ME, 7, 100, T + 1)
         self.assertEqual(standings(self.conn), {bid: "winning"})
 
+    def test_own_inactive_bid_has_no_standing(self):
+        bid = place_bid(self.conn, ME, 7, 100, T, status="cancelled")
+        self.assertEqual(standings(self.conn), {bid: None})
+
 
 class RejectLowBidTest(unittest.TestCase):
     def setUp(self):

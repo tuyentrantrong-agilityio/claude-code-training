@@ -43,6 +43,13 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(status, 409)
         self.assertEqual(body["error"], "bid must be higher than 150")
 
+    def test_huge_numbers_rejected_with_400(self):
+        status, body = self.call("/api/bids", {"auction_id": "1", "amount": str(2**70)})
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"], "auction_id and amount are too large")
+        status, _ = self.call("/api/bids", {"auction_id": str(2**63), "amount": "5"})
+        self.assertEqual(status, 400)
+
     def test_list_includes_standing(self):
         self.call("/api/bids", {"auction_id": "7", "amount": "150"})
         _, body = self.call("/api/bids?limit=10")

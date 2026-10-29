@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02")
 from auction.bids import SCHEMA, BidTooLowError, list_my_bids, place_bid  # noqa: E402
 
 USER = 42
+MAX_VALUE = 2**63 - 1  # SQLite INTEGER limit
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
 
 
@@ -58,6 +59,8 @@ def make_server(port=8000):
                 return self._send(400, {"error": "auction_id and amount must be integers"})
             if auction_id < 1 or amount < 1:
                 return self._send(400, {"error": "auction_id and amount must be positive"})
+            if auction_id > MAX_VALUE or amount > MAX_VALUE:
+                return self._send(400, {"error": "auction_id and amount are too large"})
             now = int(time.time() * 1000)
             try:
                 bid_id = place_bid(conn, USER, auction_id, amount, now)
