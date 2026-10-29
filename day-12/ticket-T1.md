@@ -41,3 +41,8 @@ so that I know at a glance if I am winning.
 
 - Q6 confirmed: only 'active' bids count for the highest bid. A bid that is not
   active is shown as `outbid`.
+
+## Review change (Day 14)
+
+- A bid that is not 'active' now has `standing = null` (shown as "-") instead of
+  `outbid`, so a cancelled bid cannot raise the outbid banner.
