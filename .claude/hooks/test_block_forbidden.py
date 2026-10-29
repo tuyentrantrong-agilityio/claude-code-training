@@ -1,5 +1,6 @@
 """Run from the repo root: python -m unittest discover -s .claude/hooks -v"""
 
+import base64
 import json
 import os
 import subprocess
@@ -52,6 +53,26 @@ BLOCKED = [
     "echo a#b; rm -rf build",
     "git commit -F - <<EOF && git push --force origin main\nmsg\nEOF",
     "bash <<EOF\nrm -rf x\nEOF",
+    "cat <<<EOF\nrm -rf x",
+    'git commit -m "see <<EOF"\nrm -rf x',
+    "cat <<EOF | bash\nrm -rf x\nEOF",
+    "sudo -u root rm -rf x",
+    "find . -name build | xargs -I {} rm -rf {}",
+    "env -u VAR git push --force origin x",
+    "timeout 5 rm -rf x",
+    "nice -n 5 rm -rf x",
+    'bash -lc "git push --force origin main"',
+    'sh -ec "rm -rf x"',
+    "git -c core.hooksPath=/dev/null commit -m x",
+    "git -c alias.p='push --force' p origin x",
+    "git -ccore.hooksPath=x commit -m x",
+    "git --config-env=core.hooksPath=VAR commit -m x",
+    "git push --al origin",
+    "git push --mirr origin",
+    "git push --no-veri origin x",
+    "git commit --no-veri -m x",
+    "rm --r --f build",
+    "rm --recurs --forc build",
 ]
 
 BLOCKED_POWERSHELL = [
@@ -64,6 +85,11 @@ BLOCKED_POWERSHELL = [
     "Remove-Item .\\build `\n    -Recurse -Force",
     "Remove-Item x -Recurse:$true -Force",
     'pwsh -Command "Remove-Item x -Recurse -Force"',
+    'pwsh -com "Remove-Item x -Recurse -Force"',
+    'pwsh -c "Remove-Item x -Recurse -Force"',
+    "pwsh -EncodedCommand "
+    + base64.b64encode("Remove-Item x -Recurse -Force".encode("utf-16-le")).decode(),
+    "pwsh -enc !!notbase64",
 ]
 
 ALLOWED = [
@@ -80,6 +106,16 @@ ALLOWED = [
     "git push -u origin add-claude-workflow; gh pr create --base main --head add-claude-workflow",
     "git push --dry-run origin feat/x",
     "git status  # no push here",
+    "python -m unittest discover -s tests -t . -v  # don't run day-11 yet",
+    "cat <<<hello",
+    'echo "a <<EOF b"\nls',
+    "git push --follow-tags origin feat/x",
+    "git commit -m x --no-edit",
+    "sudo -u root ls",
+    "timeout 5 ls",
+    'bash -lc "ls"',
+    "git -c user.name=x commit -m x",
+    "rm --verbose build.log",
 ]
 
 ALLOWED_POWERSHELL = [
