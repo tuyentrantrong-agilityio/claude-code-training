@@ -68,8 +68,15 @@ def encode_cursor(created_at, bid_id):
 
 
 def decode_cursor(cursor):
-    data = json.loads(base64.urlsafe_b64decode(cursor.encode()))
-    return data["created_at"], data["id"]
+    """Return (created_at, id). Raises ValueError for any malformed cursor."""
+    try:
+        data = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+        values = (data["created_at"], data["id"])
+    except (ValueError, KeyError, TypeError) as exc:
+        raise ValueError("invalid cursor") from exc
+    if not all(type(v) is int and abs(v) <= 2**63 - 1 for v in values):
+        raise ValueError("invalid cursor")
+    return values
 
 
 def list_my_bids(conn, user_id, limit=20, cursor=None):

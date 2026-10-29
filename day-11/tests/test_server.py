@@ -50,6 +50,15 @@ class ServerTest(unittest.TestCase):
         status, _ = self.call("/api/bids", {"auction_id": str(2**63), "amount": "5"})
         self.assertEqual(status, 400)
 
+    def test_non_integer_json_values_rejected(self):
+        for amount in (150.9, True, 1e400, "1e400"):
+            status, _ = self.call("/api/bids", {"auction_id": 1, "amount": amount})
+            self.assertEqual(status, 400, amount)
+
+    def test_bad_cursor_is_400(self):
+        status, _ = self.call("/api/bids?cursor=e30=")
+        self.assertEqual(status, 400)
+
     def test_list_includes_standing(self):
         self.call("/api/bids", {"auction_id": "7", "amount": "150"})
         _, body = self.call("/api/bids?limit=10")
