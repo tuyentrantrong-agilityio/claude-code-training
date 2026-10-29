@@ -3,6 +3,7 @@ import json
 import os
 import sqlite3
 import sys
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -15,11 +16,20 @@ MAX_VALUE = 2**63 - 1  # SQLite INTEGER limit
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
 
 
+def to_int(value):
+    """Accept ints and digit strings only; floats and booleans are rejected."""
+    if isinstance(value, (bool, float)):
+        raise ValueError("not an integer")
+    return int(value)
+
+
 def make_server(port=8000):
     # check_same_thread=False: the threaded server uses one connection.
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    # One shared connection: serialize use so rowcount/lastrowid are not mixed up.
+    lock = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, format, *args):
@@ -43,7 +53,9 @@ def make_server(port=8000):
                 try:
                     limit = int(qs.get("limit", ["20"])[0])
                     cursor = qs.get("cursor", [None])[0]
-                    return self._send(200, list_my_bids(conn, USER, limit, cursor))
+                    with lock:
+                        page = list_my_bids(conn, USER, limit, cursor)
+                    return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
             self._send(404, {"error": "not found"})
@@ -54,8 +66,8 @@ def make_server(port=8000):
             try:
                 size = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(size))
-                auction_id, amount = int(body["auction_id"]), int(body["amount"])
-            except (ValueError, KeyError, TypeError):
+                auction_id, amount = to_int(body["auction_id"]), to_int(body["amount"])
+            except (ValueError, KeyError, TypeError, OverflowError):
                 return self._send(400, {"error": "auction_id and amount must be integers"})
             if auction_id < 1 or amount < 1:
                 return self._send(400, {"error": "auction_id and amount must be positive"})
@@ -63,7 +75,8 @@ def make_server(port=8000):
                 return self._send(400, {"error": "auction_id and amount are too large"})
             now = int(time.time() * 1000)
             try:
-                bid_id = place_bid(conn, USER, auction_id, amount, now)
+                with lock:
+                    bid_id = place_bid(conn, USER, auction_id, amount, now)
             except BidTooLowError as exc:
                 return self._send(409, {"error": str(exc)})
             self._send(201, {"id": bid_id})

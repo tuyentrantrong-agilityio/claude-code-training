@@ -57,6 +57,20 @@ class StandingTest(unittest.TestCase):
         self.assertEqual(standings(self.conn), {bid: None})
 
 
+class CursorTest(unittest.TestCase):
+    def test_malformed_cursors_raise_value_error(self):
+        import base64
+        import json
+
+        def enc(obj):
+            return base64.urlsafe_b64encode(json.dumps(obj).encode()).decode()
+
+        conn = connect()
+        for cursor in (enc({"created_at": 1}), enc([1]), enc(None), enc({"created_at": 1, "id": 2**70}), "!!", enc({"created_at": "x", "id": 1})):
+            with self.assertRaises(ValueError):
+                list_my_bids(conn, ME, 10, cursor)
+
+
 class RejectLowBidTest(unittest.TestCase):
     def setUp(self):
         self.conn = connect()
