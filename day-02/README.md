@@ -1,0 +1,23 @@
+# Day 02
+
+Status: tickets analysed, bug reproduced + failing test added, git practice done
+
+| File | Exercise |
+|---|---|
+| [ticket-analysis.md](ticket-analysis.md) | 1. Ticket analysis: 5 tickets × 3 sentences, plus clarifying questions |
+| [bug-report.md](bug-report.md) | 2. Bug reproduction: cursor pagination skips same-ms bids |
+| [git-practice.md](git-practice.md) | 3. Git practice: `pull --rebase` and merge conflict |
+
+## Run (Python 3.10+, no dependencies)
+
+```bash
+cd day-02
+python -m auction.demo                                # reproduce the bug
+python -m unittest discover -s tests -t . -v          # all tests should pass
+python -m unittest discover -s tests -t . -v          # run the 4 pagination tests
+
+```
+
+## Notes
+
+- Remote-side note added from another clone.

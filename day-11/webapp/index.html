@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>My bids</title>
+<style>
+  body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; }
+  label { display: block; margin: .5rem 0; }
+  #error { color: #b00020; min-height: 1.2em; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  td, th { border: 1px solid #ccc; padding: .3rem .5rem; text-align: left; }
+</style>
+</head>
+<body>
+<h1>My bids</h1>
+<form id="bid-form">
+  <label>Auction ID <input id="auction_id" name="auction_id" type="text"></label>
+  <label>Amount <input id="amount" name="amount" type="text"></label>
+  <button type="submit" id="place">Place bid</button>
+</form>
+<p id="error" role="alert"></p>
+<p id="outbid-banner" role="status" style="color:#b00020"></p>
+<label>Page size <input id="limit" type="text" value="2"></label>
+<button id="reload">Reload</button>
+<table>
+  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<button id="more" hidden>Load more</button>
+<script>
+let nextCursor = null;
+const $ = (id) => document.getElementById(id);
+
+function showError(msg) {
+  $("error").textContent = msg;
+  if (msg) console.error("ui error:", msg);
+}
+
+// Last known standing per auction, kept in the browser between page loads.
+function readSeen() {
+  try { return JSON.parse(localStorage.getItem("standing") || "{}"); } catch (e) { return {}; }
+}
+
+// An auction is "winning" if any of the user's bids on it is the top one.
+// Uses its own request (max page size) so paging does not hide a winning bid.
+let checkSeq = 0;
+async function checkOutbid() {
+  const mySeq = ++checkSeq;
+  let items;
+  try {
+    const res = await fetch("/api/bids?limit=100");
+    if (!res.ok) return;
+    ({ items } = await res.json());
+  } catch (e) { return; }
+  if (mySeq !== checkSeq) return;
+  const now = {};
+  for (const b of items) {
+    if (!b.standing) continue;
+    now[b.auction_id] = now[b.auction_id] === "winning" || b.standing === "winning" ? "winning" : "outbid";
+  }
+  const seen = readSeen();
+  const lost = Object.keys(now).filter((a) => seen[a] === "winning" && now[a] === "outbid");
+  try { localStorage.setItem("standing", JSON.stringify({ ...seen, ...now })); } catch (e) {}
+  const msg = lost.map((a) => "You were outbid on auction " + a).join(". ");
+  if (msg) $("outbid-banner").textContent = msg;
+  else if (items.length) $("outbid-banner").textContent = "";
+}
+
+let loadSeq = 0;
+async function load(reset) {
+  const mySeq = ++loadSeq;
+  if (reset) { nextCursor = null; $("rows").innerHTML = ""; $("more").hidden = true; }
+  const params = new URLSearchParams({ limit: $("limit").value });
+  if (nextCursor) params.set("cursor", nextCursor);
+  const res = await fetch("/api/bids?" + params);
+  const data = await res.json();
+  if (mySeq !== loadSeq) return;
+  if (!res.ok) { showError(data.error); return; }
+  showError("");
+  for (const b of data.items) {
+    const tr = document.createElement("tr");
+    for (const v of [b.id, b.auction_id, b.amount, b.status, b.standing === "winning" ? "Winning" : b.standing === "outbid" ? "Outbid" : "-"]) {
+      const td = document.createElement("td");
+      td.textContent = v;
+      if (v === "Winning") td.style.color = "#1b7f3b";
+      if (v === "Outbid") td.style.color = "#b00020";
+      tr.appendChild(td);
+    }
+    $("rows").appendChild(tr);
+  }
+  if (reset) checkOutbid();
+  nextCursor = data.next_cursor;
+  $("more").hidden = !nextCursor;
+  console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
+}
+
+$("bid-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const res = await fetch("/api/bids", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ auction_id: $("auction_id").value, amount: $("amount").value }),
+  });
+  const data = await res.json();
+  if (!res.ok) { showError(data.error); return; }
+  console.log("placed bid", data.id);
+  // Own new bid is not an "outbid by someone else" event.
+  const seen = readSeen();
+  delete seen[String(parseInt($("auction_id").value, 10))];
+  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
+  load(true);
+});
+$("reload").addEventListener("click", () => load(true));
+$("more").addEventListener("click", () => load(false));
+load(true);
+</script>
+</body>
+</html>
