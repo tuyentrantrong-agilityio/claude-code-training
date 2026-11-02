@@ -60,7 +60,7 @@ folder layout is in [`intent/README.md`](intent/README.md).
 
 | Feature | Where |
 |---|---|
-| Project memory | `CLAUDE.md` (short, always loaded), `CONTEXT.md`, `docs/baseline.md` |
+| Project memory | `CLAUDE.md` (short, always loaded), `CONTEXT.md`, `docs/baseline.md`, `docs/retro.md` (lessons and where each is enforced) |
 | Subagents | `.claude/agents/`: `lead`, `ba`, `qa`, `dev` for the kickoff, `reviewer` for pull requests, each with its own tools, model and file access |
 | Rules loaded on demand | `.claude/rules/`: kickoff tickets, test matrix, day tickets, tests |
 | Hooks | `.claude/hooks/`: kickoff state, gate approvals, role file access, issue guard, lint on subagent stop, gate notification, command and secret guards, ASCII and test check after edits |

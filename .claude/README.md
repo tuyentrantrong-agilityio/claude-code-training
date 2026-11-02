@@ -26,6 +26,7 @@ What each role may read and write is enforced by `path_guard.py`, not only by it
 | UserPromptSubmit | git_reminder.py | Adds the git rules when the prompt is about commit, push, merge, tag, branch, MR or PR |
 | UserPromptSubmit | record_approval.py | Turns the user's `approve gate N` into `approvals/gate-N.md`; nothing else counts as approval |
 | PreToolUse (Bash, PowerShell) | block_forbidden.py | Blocks force push, push to main or practice, `--no-verify`, `rm -rf` and bypasses |
+| PreToolUse (Bash, PowerShell) | pre_push_check.py | Denies `git push` of a branch while `check_branch.py` fails (tag pushes are not checked) |
 | PreToolUse (Write, Edit) | block_secrets.py | Blocks `.env` files, `__pycache__`, and content that looks like a token or key |
 | PreToolUse (file tools, shell) | path_guard.py | Keeps each kickoff role and the reviewer inside its files; hides the client truth until the reveal; nobody writes approvals |
 | PreToolUse (shell, MCP) | gate_guard.py | No issue (GitHub MCP, `gh issue create`, `gh api` POST, browser new-issue page) before Gate 3 |

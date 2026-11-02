@@ -11,6 +11,10 @@ paths:
   Run everything with `python .claude/skills/run-tests/run_tests.py`.
 - Name a test after the behaviour it proves: `test_low_bid_is_rejected_with_409`,
   not `test_case_3`. Use `subTest` when one test loops over several inputs.
+- Assert the whole answer the matrix row names: status and body, as literal values
+  (`(409, {"error": "bid must be at least 110"})`). A status alone, or one live answer
+  compared with another, passes when both are wrong (reviews of PR #9 and #13).
+- No comments that record review history in tests; that history lives in `evidence/`.
 - New behaviour gets a new test. Never edit an existing assertion to make it pass;
   fix the code, unless the test itself is wrong, and then say why in the PR.
 - A bug fix starts with a test that fails on the old code.

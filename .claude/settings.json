@@ -47,6 +47,11 @@
           {
             "type": "command",
             "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/block_forbidden.py\" || exit 2"
+          },
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre_push_check.py\"",
+            "timeout": 90
           }
         ]
       },

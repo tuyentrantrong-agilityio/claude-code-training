@@ -5,7 +5,8 @@ Usage: python scripts/check_matrix.py intent/<folder>
 A ticket counts as built once `<folder>/evidence/T-NN/` exists (the build saves its
 evidence there). For every matrix row of a built ticket, the Planned test
 `<path>::test_<name>` must name a file under the repo root that defines that test
-function. Rows of tickets not built yet are listed, not checked.
+function, and `evidence/T-NN/README.md` must show every screenshot of that folder
+inline. Rows of tickets not built yet are listed, not checked.
 
 Prints one `<row>: <problem>` line per problem and exits 1 if there are any.
 Standard library only, so CI can run it with plain python.
@@ -20,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lint_tickets import matrix_rows  # noqa: E402
 
 PLANNED = re.compile(r"`?([\w./-]+\.py)::(test_\w+)`?")
+IMAGES = {".png", ".jpg", ".jpeg", ".gif"}
 
 
 def test_names(path, cache):
@@ -31,6 +33,23 @@ def test_names(path, cache):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_")
         }
     return cache[path]
+
+
+def check_evidence(folder, built):
+    """A built ticket's evidence folder has a README that shows every screenshot inline,
+    so it stands on its own on GitHub when a report link does not open."""
+    problems = []
+    for ticket in sorted(built):
+        evidence = folder / "evidence" / ticket
+        readme = evidence / "README.md"
+        if not readme.is_file():
+            problems.append(f"evidence/{ticket}: no README.md")
+            continue
+        text = readme.read_text(encoding="utf-8")
+        for image in sorted(p.name for p in evidence.iterdir() if p.suffix.lower() in IMAGES):
+            if f"]({image})" not in text or "![" not in text:
+                problems.append(f"evidence/{ticket}: README.md does not show {image} inline (![...]({image}))")
+    return problems
 
 
 def check(folder):
@@ -58,6 +77,7 @@ def check(folder):
             problems.append(f"{rid}: {match.group(1)} has no {name}")
         else:
             done[0] += 1
+    problems += check_evidence(folder, built)
     summary = [
         f"{ticket}: {ok}/{total} rows have their test" if ticket in built else f"{ticket}: not built yet ({total} rows)"
         for ticket, (ok, total) in sorted(counts.items())
