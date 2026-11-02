@@ -64,8 +64,8 @@ folder layout is in [`intent/README.md`](intent/README.md).
 | Subagents | `.claude/agents/`: `lead`, `ba`, `qa`, `dev` for the kickoff, `reviewer` for pull requests, each with its own tools, model and file access |
 | Rules loaded on demand | `.claude/rules/`: kickoff tickets, test matrix, day tickets, tests |
 | Hooks | `.claude/hooks/`: kickoff state, gate approvals, role file access, issue guard, lint on subagent stop, gate notification, command and secret guards, ASCII and test check after edits |
-| Skills | `.claude/skills/`: `kickoff`, `write-ticket`, `test-matrix`, `fix-ticket`, `run-tests`, `review-checklist`, `evidence` |
-| Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py`, `scripts/check_matrix.py`, `scripts/review_context.py`, `scripts/review_findings.py` (tests in `tests/`) |
+| Skills | `.claude/skills/`: `kickoff`, `write-ticket`, `test-matrix`, `fix-ticket`, `run-tests`, `review-checklist`, `review-pr`, `evidence`, `release` |
+| Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py`, `scripts/check_matrix.py`, `scripts/review_context.py`, `scripts/review_findings.py`, `scripts/release_notes.py` (tests in `tests/`) |
 | Status line | the kickoff stage and whether a gate is waiting |
 | Slash command | `.claude/commands/pr-description.md` |
 | MCP | `.mcp.json`: GitHub (issues at the kickoff `promote` stage) and Playwright; Claude in Chrome drives the web app for evidence |
