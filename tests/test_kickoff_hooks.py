@@ -143,7 +143,19 @@ class PathGuardTest(ProjectTestCase):
         approval = self.path(f"{FOLDER}/approvals/gate-1.md")
         self.assertTrue(self.denied(self.call("Write", file_path=approval)))
         self.assertTrue(self.denied(self.call("Write", "ba", file_path=approval)))
-        self.assertTrue(self.denied(self.call("Bash", command=f"echo yes > {FOLDER}/approvals/gate-1.md")))
+        for command in (f"echo yes > {FOLDER}/approvals/gate-1.md",
+                        f"cd {FOLDER} && printf x > approvals/gate-2.md",
+                        f"mkdir -p {FOLDER}/approvals",
+                        f"Set-Content {FOLDER}\\approvals\\gate-3.md yes"):
+            with self.subTest(command=command):
+                self.assertTrue(self.denied(self.call("Bash", command=command)))
+
+    def test_word_approvals_alone_is_not_a_write(self):
+        for command in ("gh api repos/o/r/branches/main/protection --jq '{approvals: .x}' 2>&1",
+                        "grep -n approvals .claude/hooks/path_guard.py 2>/dev/null",
+                        f"ls {FOLDER}/approvals"):
+            with self.subTest(command=command):
+                self.assertFalse(self.denied(self.call("Bash", command=command)))
 
     def test_main_conversation_cannot_read_private_notes_before_reveal(self):
         self.assertTrue(self.denied(self.call("Read", file_path=self.path(".kickoff-private/client-truth.md"))))

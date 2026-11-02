@@ -42,6 +42,8 @@ SEARCH_TOOLS = {"Glob", "Grep"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 PRIVATE = ".kickoff-private"
 APPROVALS = re.compile(r"(^|/)intent/[^/]+/approvals(/|$)")
+# A shell command touches approval files only if it names their path, not just the word.
+APPROVALS_IN_SHELL = re.compile(r"approvals[/\\]|intent[/\\]\S*approvals\b")
 REVEALED = {"reveal", "done"}
 SHELL_WRITES = re.compile(
     r">|\b(rm|mv|cp|touch|tee|sed|mkdir|python3?|echo|printf|ln|truncate|"
@@ -79,7 +81,7 @@ def check_role(role, tool, rel, raw):
 def check_everyone(tool, rel, command):
     if tool in WRITE_TOOLS and APPROVALS.search(rel):
         return "approval files are written only when the user types `approve gate N`"
-    if tool in SHELL_TOOLS and "approvals" in command and SHELL_WRITES.search(command):
+    if tool in SHELL_TOOLS and APPROVALS_IN_SHELL.search(command) and SHELL_WRITES.search(command):
         return "approval files are written only when the user types `approve gate N`"
     return None
 
