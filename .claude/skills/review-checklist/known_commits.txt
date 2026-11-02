@@ -1,0 +1,4 @@
+# Commits already pushed to practice that break a commit rule and cannot be reworded
+# (CLAUDE.md: never rewrite pushed history). check_branch.py skips only these.
+# One per line: <full sha> <reason>. Adding a line needs the user's agreement.
+53956044966cb89baa297d7cd7e466ae713502a7 GitLab MR !25, pushed before CI checked commits; subject credits Claude ("captured by claude")

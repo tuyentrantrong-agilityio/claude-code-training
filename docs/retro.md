@@ -19,6 +19,7 @@ a script in CI, or a rule that loads with the files it covers.
 | A subagent cannot write report files, so a stop hook checking the reviewer's file never fired | The reviewer replies; `/review-pr` saves the reply and checks it with `scripts/review_findings.py` |
 | The kickoff skill let the BA mark a ticket ready right after answering a blocking question (T-03, round 1) | `scripts/lint_tickets.py`, so CI and the `lint_on_stop` hook on the BA: `ready` only when the latest Dev round raised no `[B]`; the BA agent and kickoff skill say the same |
 | The attribution check blocked any word `claude`, so a true title about the tool ("a playbook for shipping a feature with claude code") had to be reworded | `check_branch.py` blocks AI credit (`Co-Authored-By`, "generated with", "by claude", "ai-generated") and allows the tool name; its tests now run in `run_tests.py` and CI |
+| The release PR (practice into main) failed on a GitLab-era commit that credits Claude; it predates the CI commit check and cannot be reworded | `known_commits.txt` names it with a reason; `check_branch.py` excuses only listed commits, and a test pins the list |
 
 ## Day 15 retro items (`day-15/retro-issues.md`)
 

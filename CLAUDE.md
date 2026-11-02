@@ -34,7 +34,8 @@ for Claude Code training. Python stdlib only, no dependencies.
 - No AI credit in commits and pull request descriptions: no `Co-Authored-By` trailer,
   no "Generated with/by ..." line, nothing like "by Claude" or "AI-generated". Naming
   the tool as the subject is fine ("playbook for shipping a feature with claude code").
-  `check_branch.py` checks this.
+  `check_branch.py` checks this; pushed commits that cannot be reworded are listed, with
+  a reason, in `.claude/skills/review-checklist/known_commits.txt`.
 - English everywhere in code. Plain ASCII only: no emoji, em dashes, curly quotes,
   arrows or bullet symbols. No lines saying code was AI-generated.
 - Keep comments short and only where the code is not self-explanatory.
