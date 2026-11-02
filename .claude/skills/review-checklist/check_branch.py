@@ -4,6 +4,7 @@ Usage: python .claude/skills/review-checklist/check_branch.py [base]
 base defaults to origin/practice. Exit code is 1 if any check fails.
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -46,6 +47,27 @@ def check_body(body):
     return None
 
 
+def known_commits(path=None):
+    """Full shas of pushed commits excused from the message rules, from known_commits.txt."""
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "known_commits.txt")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return {line.split()[0] for line in f if line.strip() and not line.startswith("#")}
+    except OSError:
+        return set()
+
+
+def commit_problems(entries, excused):
+    """'<sha> <subject>: <problem>' for each commit that breaks a rule and is not excused."""
+    problems = []
+    for entry in filter(str.strip, entries):
+        sha, subject, body = (entry.strip("\n").split("\x1f") + ["", ""])[:3]
+        issue = check_subject(subject) or check_body(body)
+        if issue and sha not in excused:
+            problems.append(f"{sha[:7]} {subject}: {issue}")
+    return problems
+
+
 def forbidden_paths(paths):
     return [p for p in paths if FORBIDDEN_PATH.search(p)]
 
@@ -70,13 +92,7 @@ def main(argv):
         results.append((name, problems))
 
     commits = git("log", "--no-merges", "--format=%H%x1f%s%x1f%b%x1e", f"{base}..HEAD").split("\x1e")
-    problems = []
-    for entry in filter(str.strip, commits):
-        sha, subject, body = (entry.strip("\n").split("\x1f") + ["", ""])[:3]
-        issue = check_subject(subject) or check_body(body)
-        if issue:
-            problems.append(f"{sha[:7]} {subject}: {issue}")
-    record("commit messages", problems)
+    record("commit messages", commit_problems(commits, known_commits()))
 
     paths = git("diff", "--name-only", f"{base}...HEAD").splitlines()
     record("no pycache, .env or .pyc files", [f"{p}" for p in forbidden_paths(paths)])

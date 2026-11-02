@@ -46,6 +46,24 @@ class SubjectTest(unittest.TestCase):
                 self.assertIsNone(check_branch.check_subject(subject))
 
 
+class KnownCommitsTest(unittest.TestCase):
+    LEGACY = "53956044966cb89baa297d7cd7e466ae713502a7"
+
+    def entries(self, *commits):
+        return ["\n" + "\x1f".join(c) for c in commits]
+
+    def test_only_listed_commits_are_excused(self):
+        entries = self.entries((self.LEGACY, "docs: add evidence captured by claude", ""),
+                               ("b" * 40, "docs: add notes written by claude", ""),
+                               ("c" * 40, "feat: add x", ""))
+        self.assertEqual(check_branch.commit_problems(entries, {self.LEGACY}),
+                         ["bbbbbbb docs: add notes written by claude: subject credits AI or Claude as an author"])
+
+    def test_the_legacy_commit_is_listed_with_a_reason(self):
+        known = check_branch.known_commits()
+        self.assertEqual(known, {self.LEGACY})
+
+
 class PathAndDiffTest(unittest.TestCase):
     def test_forbidden_paths(self):
         paths = ["day-02/auction/__pycache__/x.pyc", ".env", "app/.env.local", "a.pyc", ".env.example", "day-02/a.py"]
