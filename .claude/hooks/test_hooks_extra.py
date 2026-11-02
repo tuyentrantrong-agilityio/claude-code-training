@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import block_secrets  # noqa: E402
 import git_reminder  # noqa: E402
 import post_edit_check  # noqa: E402
+import pre_push_check  # noqa: E402
 import session_status  # noqa: E402
 
 # Built from parts so this file does not look like a leaked secret itself.
@@ -145,6 +146,39 @@ class GitReminderTest(unittest.TestCase):
         for prompt in ("explain bids.py", "run the tests", "", None):
             with self.subTest(prompt=prompt):
                 self.assertEqual(git_reminder.reminder_for(prompt), "")
+
+
+class PrePushCheckTest(unittest.TestCase):
+    FAIL = "[PASS] commit messages\n[FAIL] no non-ASCII in added lines\n       tests/x.py: U+2192\n"
+
+    def decide(self, command, code=1, branch="feat/x"):
+        calls = []
+
+        def checklist(root):
+            calls.append(root)
+            return code, self.FAIL if code else "[PASS] all\n"
+
+        return pre_push_check.decide(command, "/repo", branch=branch, checklist=checklist), calls
+
+    def test_failing_checklist_blocks_a_branch_push(self):
+        for command in ("git push -u origin feat/x", "git push", "git -C /repo push origin HEAD",
+                        "git add x && git commit -m 'feat: x' && git push -u origin feat/x 2>&1 | tail -1"):
+            with self.subTest(command=command):
+                reason, calls = self.decide(command)
+                self.assertIn("U+2192", reason)
+                self.assertEqual(len(calls), 1)
+
+    def test_passing_checklist_lets_the_push_run(self):
+        self.assertEqual(self.decide("git push -u origin feat/x", code=0)[0], None)
+
+    def test_tag_pushes_and_other_commands_are_not_checked(self):
+        for command in ("git push origin v0.2.0", "git push --tags", "git status", "gh pr create --base practice",
+                        "echo git pushes are checked"):
+            with self.subTest(command=command):
+                self.assertEqual(self.decide(command), (None, []))
+
+    def test_on_main_or_practice_block_forbidden_decides(self):
+        self.assertEqual(self.decide("git push", branch="practice"), (None, []))
 
 
 if __name__ == "__main__":

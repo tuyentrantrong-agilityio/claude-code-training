@@ -116,8 +116,24 @@ class CheckMatrixTest(ProjectTestCase):
         self.tests.mkdir(parents=True)
 
     def build(self, code):
-        (self.folder / "evidence" / "T-01").mkdir(parents=True)
+        self.evidence = self.folder / "evidence" / "T-01"
+        self.evidence.mkdir(parents=True)
+        (self.evidence / "README.md").write_text("# Evidence: T-01\n", encoding="utf-8")
         (self.tests / "test_end.py").write_text(code, encoding="utf-8")
+
+    def test_evidence_needs_a_readme(self):
+        self.build("def test_a(): pass\ndef test_b(): pass\n")
+        (self.evidence / "README.md").unlink()
+        self.assertEqual(check(self.folder)[0], ["evidence/T-01: no README.md"])
+
+    def test_every_screenshot_is_shown_inline(self):
+        self.build("def test_a(): pass\ndef test_b(): pass\n")
+        for name in ("01-ok.png", "02-missing.jpg"):
+            (self.evidence / name).write_bytes(b"x")
+        (self.evidence / "README.md").write_text("![first](01-ok.png)\n02-missing.jpg is listed only\n",
+                                                encoding="utf-8")
+        self.assertEqual(check(self.folder)[0],
+                         ["evidence/T-01: README.md does not show 02-missing.jpg inline (![...](02-missing.jpg))"])
 
     def test_ticket_not_built_is_not_checked(self):
         problems, summary = check(self.folder)
@@ -140,6 +156,7 @@ class CheckMatrixTest(ProjectTestCase):
 
     def test_missing_test_file(self):
         (self.folder / "evidence" / "T-01").mkdir(parents=True)
+        (self.folder / "evidence" / "T-01" / "README.md").write_text("# Evidence\n", encoding="utf-8")
         problems, _ = check(self.folder)
         self.assertEqual(problems, [f"M-00{i}: day-02/tests/test_end.py does not exist" for i in (1, 2)])
 
