@@ -18,6 +18,15 @@ Tests: `python .claude/hooks/test_block_forbidden.py` and
 `python .claude/hooks/test_hooks_extra.py`. The hooks are guardrails against
 mistakes, not a sandbox.
 
+## Rules (`.claude/rules`)
+
+Loaded only when Claude works on matching files, so `CLAUDE.md` stays short.
+
+| Rule | Applies to |
+|---|---|
+| tickets.md | `day-*/ticket*.md` and the planning files `day-*/0*-*.md` |
+| tests.md | `day-*/tests/**` and `.claude/**/test_*.py` |
+
 ## Skills (`.claude/skills`)
 
 | Skill | Use |
