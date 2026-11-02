@@ -88,8 +88,11 @@ Repeat up to 3 iterations while some ticket is not ready:
    agent: one that remembers earlier answers would fake a clean read.
 2. Append each Dev's lines to that ticket's `## Questions` exactly as returned
    (replacing `- None yet.`). For `NO QUESTIONS`, append nothing.
-3. For each ticket with open questions, spawn `ba` with
+3. For each ticket of this round (open questions or `NO QUESTIONS`), spawn `ba` with
    `Stage dev-round. Folder: <folder>. Ticket: <path>. Iteration: <n>.`, one at a time.
+   The BA closes the questions and sets `ready` only if this round raised no `[B]`;
+   a ticket whose round raised a `[B]` stays draft and gets the next round. The linter
+   (and `lint_on_stop`) refuses `ready` right after a Dev `[B]`.
 4. If the BA added `## Questions for the client (dev round)` to `intake.md`, spawn
    `lead` (`Stage answers. Folder: <folder>.`), then `ba` again for those tickets.
 
