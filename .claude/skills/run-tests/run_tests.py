@@ -2,7 +2,8 @@
 
 Usage: python .claude/skills/run-tests/run_tests.py [day-NN ...] [--save PATH]
 With no day given it runs every day-NN folder that has a tests directory, the
-kickoff harness tests in tests/, and the hook tests in .claude/hooks. Exit code is 1 if any suite fails.
+kickoff harness tests in tests/, and the test_*.py files in .claude/hooks and
+.claude/skills/*. Exit code is 1 if any suite fails.
 """
 
 import glob
@@ -45,8 +46,10 @@ def suites(days):
     if not days:
         if os.path.isdir(os.path.join(ROOT, "tests")):
             found.append(("tests (kickoff harness)", [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "."], ROOT))
-        for path in sorted(glob.glob(os.path.join(ROOT, ".claude", "hooks", "test_*.py"))):
-            found.append((".claude/hooks/" + os.path.basename(path), [sys.executable, path], ROOT))
+        for path in sorted(glob.glob(os.path.join(ROOT, ".claude", "hooks", "test_*.py"))
+                           + glob.glob(os.path.join(ROOT, ".claude", "skills", "*", "test_*.py"))):
+            name = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            found.append((name, [sys.executable, path], ROOT))
     return found
 
 
