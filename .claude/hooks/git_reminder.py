@@ -8,13 +8,14 @@ import json
 import re
 import sys
 
-GIT_WORDS = re.compile(r"\b(commit|push|merge|tag|rebase|branch|mr|merge request)\b", re.IGNORECASE)
+GIT_WORDS = re.compile(r"\b(commit|push|merge|tag|rebase|branch|mr|pr|merge request|pull request)\b", re.IGNORECASE)
 
 REMINDER = (
     "Git rules from CLAUDE.md: commit message format '<type>: <short description>' "
     "(lowercase, imperative, no period, no AI attribution lines); never push to main or "
-    "practice; open a merge request into practice from a fix/, feat/ or docs/ branch; "
-    "never force push or skip hooks; GitLab writes need the user's yes first."
+    "practice; open a pull request into practice from a fix/, feat/ or docs/ branch with "
+    "`gh pr create --base practice`; never force push or skip hooks; GitHub writes "
+    "(push, PR, issue, merge) need the user's yes first."
 )
 
 

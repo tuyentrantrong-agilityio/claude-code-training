@@ -22,12 +22,12 @@ What each role may read and write is enforced by `path_guard.py`, not only by it
 |---|---|---|
 | SessionStart | session_status.py | Branch, ahead/behind `origin/practice`, dirty files, main rules; warns on main or practice |
 | SessionStart, status line | load_state.py | Active kickoff, next stage and any waiting gate |
-| UserPromptSubmit | git_reminder.py | Adds the git rules when the prompt is about commit, push, merge, tag, branch or MR |
+| UserPromptSubmit | git_reminder.py | Adds the git rules when the prompt is about commit, push, merge, tag, branch, MR or PR |
 | UserPromptSubmit | record_approval.py | Turns the user's `approve gate N` into `approvals/gate-N.md`; nothing else counts as approval |
 | PreToolUse (Bash, PowerShell) | block_forbidden.py | Blocks force push, push to main or practice, `--no-verify`, `rm -rf` and bypasses |
 | PreToolUse (Write, Edit) | block_secrets.py | Blocks `.env` files, `__pycache__`, and content that looks like a token or key |
 | PreToolUse (file tools, shell) | path_guard.py | Keeps each kickoff role inside its files; hides the client truth until the reveal; nobody writes approvals |
-| PreToolUse (shell, MCP) | gate_guard.py | No GitLab issue (browser new-issue page, MCP, `glab`, API POST) before Gate 3 |
+| PreToolUse (shell, MCP) | gate_guard.py | No issue (GitHub MCP, `gh issue create`, `gh api` POST, browser new-issue page) before Gate 3 |
 | PostToolUse (Write, Edit) | post_edit_check.py | Reports non-ASCII characters; runs the day's tests when a Python file there changed |
 | SubagentStop (ba, qa) | lint_on_stop.py | Keeps the BA or QA working once if `scripts/lint_tickets.py` fails on its files |
 | Stop | notify_gate.py | Desktop notification when a kickoff gate waits for the user |
@@ -54,9 +54,10 @@ Loaded only when Claude works on matching files, so `CLAUDE.md` stays short.
 | kickoff | Run the feature kickoff one stage per call, stopping at the three gates |
 | write-ticket | Write a ticket that passes the zero-questions test (BA) |
 | test-matrix | Draft the test matrix with derived edge cases (QA) |
-| fix-ticket | Fix one ticket from branch to merge request |
+| fix-ticket | Fix one ticket from branch to pull request |
 | run-tests | Run every unittest suite and print one summary table |
-| review-checklist | Check a branch against the CLAUDE.md rules before a merge request |
+| review-checklist | Check a branch against the CLAUDE.md rules before a pull request |
 | evidence | Start the app, drive it in Chrome through MCP, save screenshots and publish the run |
 
-The slash command `/mr-description` is in `.claude/commands`.
+The slash command `/pr-description` is in `.claude/commands`.
+CI: `.github/workflows/ci.yml` runs every suite and lints every kickoff folder on each PR.

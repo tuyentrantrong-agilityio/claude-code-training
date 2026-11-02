@@ -115,7 +115,7 @@ def is_long_option(arg, full):
 
 
 def drop_heredoc_bodies(text):
-    """Remove heredoc bodies that are plain text (commit or MR messages).
+    """Remove heredoc bodies that are plain text (commit or PR messages).
 
     The rest of the opening line is kept and checked. A body fed to a shell
     (bash <<EOF) is a script, so it is kept and checked too.
@@ -210,7 +210,7 @@ def check_git_push(args, cwd):
         if target in ("HEAD", "@"):
             target = current_branch(cwd)
         if target.removeprefix("refs/heads/") in PROTECTED:
-            raise Blocked("push to main or practice is forbidden; push a feature branch and open a merge request")
+            raise Blocked("push to main or practice is forbidden; push a feature branch and open a pull request")
     if not refspecs and current_branch(cwd) in PROTECTED:
         raise Blocked("plain git push while on main or practice is forbidden")
 

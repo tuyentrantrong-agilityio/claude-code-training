@@ -1,7 +1,7 @@
 # claude-code-training
 
 A small auction platform built during a 15-day Claude Code training, and the
-Claude Code setup used to build it: rules, hooks, skills and a merge request flow
+Claude Code setup used to build it: rules, hooks, skills and a pull request flow
 where Claude drafts and checks, and a human decides every merge.
 
 ## The product
@@ -40,7 +40,7 @@ approve gate 1           approve the stage Claude stopped at (1, 2 or 3)
 | `answers` | lead | client answers in `intake.md` | continue |
 | `pack` | ba, then qa | `spec.md`, `tickets/`, `test-matrix.md` | **Gate 2** |
 | `dev-round` | dev per ticket, ba | questions in tickets, BA revisions, `scorecard.md` | **Gate 3** |
-| `promote` | Claude | GitLab issues from ready tickets | continue |
+| `promote` | Claude | GitHub issues from ready tickets | continue |
 | `reveal` | Claude | client truth into the folder, `recall.md`, final scorecard | done |
 
 Scores come from `scripts/score_kickoff.py`, never from an agent's opinion. The
@@ -51,8 +51,8 @@ folder layout is in [`intent/README.md`](intent/README.md).
 | Step | Who | Output |
 |---|---|---|
 | Kickoff | `/kickoff` with the lead, ba, qa and dev agents | `intent/<date>-<slug>/` ticket pack, scorecard |
-| Build | Dev with Claude, plan mode first | One branch and one MR per ticket into `practice` |
-| Review | `/code-review`, `review-checklist`, browser check | Findings fixed in their own MR |
+| Build | Dev with Claude, plan mode first | One branch and one PR per ticket into `practice`, CI must be green |
+| Review | `/code-review`, `review-checklist`, browser check | Findings fixed in their own PR |
 | Evidence | Claude through `/evidence` | Screenshots, test output and an artifact page |
 | Release | Human merges `practice` into `main` | Tag `vX.Y.Z` |
 
@@ -67,13 +67,14 @@ folder layout is in [`intent/README.md`](intent/README.md).
 | Skills | `.claude/skills/`: `kickoff`, `write-ticket`, `test-matrix`, `fix-ticket`, `run-tests`, `review-checklist`, `evidence` |
 | Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py` (tests in `tests/`) |
 | Status line | the kickoff stage and whether a gate is waiting |
-| Slash command | `.claude/commands/mr-description.md` |
-| MCP | Claude in Chrome drives the web app for evidence; `.mcp.json` declares Playwright |
+| Slash command | `.claude/commands/pr-description.md` |
+| MCP | `.mcp.json`: GitHub (issues at the kickoff `promote` stage) and Playwright; Claude in Chrome drives the web app for evidence |
+| CI | `.github/workflows/ci.yml`: every test suite, kickoff lint and the CLAUDE.md commit check on each PR |
 | Loop | `.claude/loop.md`: what `/loop` checks on the `practice` branch |
 
 Details of every hook and skill are in [`.claude/README.md`](.claude/README.md).
 
 ## Repository rules
 
-Branches `fix/`, `feat/` or `docs/` from `practice`, one merge request each, no
+Branches `fix/`, `feat/` or `docs/` from `practice`, one pull request each, no
 direct pushes to `main` or `practice`, stdlib only, plain ASCII. See `CLAUDE.md`.

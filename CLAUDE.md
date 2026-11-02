@@ -29,7 +29,7 @@ for Claude Code training. Python stdlib only, no dependencies.
 - Commit messages: `<type>: <short description>`, lowercase, imperative, no trailing
   period. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 - No `Co-Authored-By` trailer, no "Generated with ..." line, and no line that mentions
-  AI or Claude, in commits and merge request descriptions.
+  AI or Claude, in commits and pull request descriptions.
 - English everywhere in code. Plain ASCII only: no emoji, em dashes, curly quotes,
   arrows or bullet symbols. No lines saying code was AI-generated.
 - Keep comments short and only where the code is not self-explanatory.
@@ -38,10 +38,11 @@ for Claude Code training. Python stdlib only, no dependencies.
 
 ## Repository
 
-- Self-managed GitLab: `https://gitlab.asoft-python.com/tuyen.trantrong/claude-code-training.git`.
-  Merge requests, not GitHub pull requests; `gh` does not apply. GitLab CI is disabled.
-- Work on a `fix/`, `feat/` or `docs/` branch from `origin/practice` and open the MR
-  into `practice` with push options. `main` only receives `practice` for a release.
+- GitHub: `tuyentrantrong-agilityio/claude-code-training` (remote `origin`). Use `gh`.
+  The old home on GitLab (remote `gitlab`, MRs !1 to !27) is kept as an archive; do not push there.
+- Work on a `fix/`, `feat/` or `docs/` branch from `origin/practice`, then
+  `gh pr create --base practice`. A PR is merged by the user, only with a green CI check
+  (`.github/workflows/ci.yml`). `main` only receives `practice` for a release.
 - Windows (PowerShell and Git Bash).
 
 ## Never do
@@ -55,4 +56,4 @@ for Claude Code training. Python stdlib only, no dependencies.
 - Never write, edit or delete anything under `intent/*/approvals/`; only the user's
   `approve gate N` creates those files. "ok" or "looks good" is not an approval.
 - Never read or quote the client truth before the kickoff's reveal stage, and never
-  create GitLab issues for a kickoff before Gate 3 is approved.
+  create GitHub issues for a kickoff before Gate 3 is approved.
