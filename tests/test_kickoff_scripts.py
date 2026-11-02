@@ -6,6 +6,7 @@ from tests.helpers import GOOD_TICKET, MATRIX, REPO, ProjectTestCase
 
 sys.path.insert(0, str(REPO / "scripts"))
 
+from check_matrix import check  # noqa: E402
 from lint_tickets import lint  # noqa: E402
 from score_kickoff import render  # noqa: E402
 
@@ -99,3 +100,50 @@ class ScoreKickoffTest(ProjectTestCase):
         self.assertIn("BA recall: 1.5/3 (50%)", text)
         self.assertIn("Hidden requirements recall: 0.5/2 (25%)", text)
         self.assertIn("Missed: H3", text)
+
+
+class CheckMatrixTest(ProjectTestCase):
+    """MATRIX plans day-02/tests/test_end.py::test_a and ::test_b for T-01."""
+
+    def setUp(self):
+        super().setUp()
+        self.write_ticket()
+        (self.folder / "test-matrix.md").write_text(MATRIX, encoding="utf-8")
+        self.tests = self.root / "day-02" / "tests"
+        self.tests.mkdir(parents=True)
+
+    def build(self, code):
+        (self.folder / "evidence" / "T-01").mkdir(parents=True)
+        (self.tests / "test_end.py").write_text(code, encoding="utf-8")
+
+    def test_ticket_not_built_is_not_checked(self):
+        problems, summary = check(self.folder)
+        self.assertEqual(problems, [])
+        self.assertEqual(summary, ["T-01: not built yet (2 rows)"])
+
+    def test_built_ticket_with_every_test(self):
+        self.build("class EndTest:\n    def test_a(self): pass\n\ndef test_b(): pass\n")
+        self.assertEqual(check(self.folder), ([], ["T-01: 2/2 rows have their test"]))
+
+    def test_missing_test_function(self):
+        self.build("def test_a(): pass\n")
+        problems, summary = check(self.folder)
+        self.assertEqual(problems, ["M-002: day-02/tests/test_end.py has no test_b"])
+        self.assertEqual(summary, ["T-01: 1/2 rows have their test"])
+
+    def test_name_in_a_comment_does_not_count(self):
+        self.build("def test_a(): pass\n# test_b is planned\n")
+        self.assertIn("M-002: day-02/tests/test_end.py has no test_b", check(self.folder)[0])
+
+    def test_missing_test_file(self):
+        (self.folder / "evidence" / "T-01").mkdir(parents=True)
+        problems, _ = check(self.folder)
+        self.assertEqual(problems, [f"M-00{i}: day-02/tests/test_end.py does not exist" for i in (1, 2)])
+
+    def test_planned_test_must_name_a_function(self):
+        self.build("def test_a(): pass\ndef test_b(): pass\n")
+        matrix = MATRIX.replace("`day-02/tests/test_end.py::test_b`", "manual check in the browser")
+        (self.folder / "test-matrix.md").write_text(matrix, encoding="utf-8")
+        problems, _ = check(self.folder)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("M-002: planned test 'manual check in the browser'", problems[0])

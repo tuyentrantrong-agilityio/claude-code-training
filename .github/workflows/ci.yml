@@ -24,6 +24,13 @@ jobs:
           for folder in intent/20*/; do
             python scripts/lint_tickets.py "$folder"
           done
+      # A built ticket (evidence/T-NN exists) must have every planned test it promised.
+      - name: Check test matrix against real tests
+        run: |
+          shopt -s nullglob
+          for folder in intent/20*/; do
+            python scripts/check_matrix.py "$folder"
+          done
       - name: Check commits against CLAUDE.md
         if: github.event_name == 'pull_request'
         run: |

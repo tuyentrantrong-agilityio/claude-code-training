@@ -10,7 +10,8 @@ for Claude Code training. Python stdlib only, no dependencies.
 - Web app: `cd day-11 && python -m webapp.server` (http://127.0.0.1:8000)
 - Demo data app on another port: `python .claude/skills/evidence/seed_server.py 8010`
 - Feature kickoff: `/kickoff`; lint `python scripts/lint_tickets.py intent/<folder>`,
-  score `python scripts/score_kickoff.py intent/<folder>`
+  score `python scripts/score_kickoff.py intent/<folder>`, matrix against real tests
+  `python scripts/check_matrix.py intent/<folder>`
 
 ## Layout
 

@@ -2,11 +2,13 @@
 paths:
   - "intent/**"
   - "scripts/lint_tickets.py"
+  - "scripts/check_matrix.py"
 ---
 
 # Test matrix format
 
 `intent/<folder>/test-matrix.md`, written by the QA agent. `scripts/lint_tickets.py` checks coverage.
+After the build, `scripts/check_matrix.py` checks that each planned test exists.
 
 ## Table
 
@@ -20,7 +22,8 @@ One row per test case:
 - **Scenario**: `S<n>` from the ticket, or `edge` for a case no scenario covers yet.
 - **Type**: `happy`, `edge` or `negative`.
 - **Expected**: observable, same rule as a ticket's Then.
-- **Planned test**: `<day folder>/tests/<file>.py::test_<name>`. Names only until the build.
+- **Planned test**: `<day folder>/tests/<file>.py::test_<name>`. Names only until the build;
+  once the ticket is built the function must exist, and a renamed test updates its row.
 
 ## Rules
 
