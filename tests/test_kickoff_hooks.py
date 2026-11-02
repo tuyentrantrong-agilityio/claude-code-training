@@ -46,6 +46,12 @@ class GateGuardTest(ProjectTestCase):
 
     def test_issue_creation_blocked_before_gate_3(self):
         cases = [
+            ("mcp__github__create_issue", {"title": "T-01 Show when an auction ends"}),
+            ("mcp__github__issue_write", {"method": "create"}),
+            ("Bash", {"command": "gh issue create --title 'T-01' --body-file t.md --assignee @me"}),
+            ("Bash", {"command": "gh api repos/o/r/issues -f title=x"}),
+            ("Bash", {"command": "gh api -X POST repos/o/r/issues --input t.json"}),
+            ("mcp__claude-in-chrome__navigate", {"url": "https://github.com/o/r/issues/new"}),
             ("mcp__claude-in-chrome__navigate",
              {"url": "https://gitlab.asoft-python.com/tuyen.trantrong/claude-code-training/-/issues/new"}),
             ("mcp__claude-in-chrome__navigate", {"url": "https://gitlab.example.com/a/b/-/work_items/new"}),
@@ -61,6 +67,11 @@ class GateGuardTest(ProjectTestCase):
 
     def test_reading_issues_is_allowed(self):
         for tool, tool_input in [
+            ("Bash", {"command": "gh issue list --state open"}),
+            ("Bash", {"command": "gh api repos/o/r/issues"}),
+            ("Bash", {"command": "gh pr create --base practice --title x --body y"}),
+            ("mcp__github__list_issues", {}),
+            ("mcp__claude-in-chrome__navigate", {"url": "https://github.com/o/r/issues/4"}),
             ("mcp__claude-in-chrome__navigate", {"url": "https://gitlab.example.com/a/b/-/issues/4"}),
             ("Bash", {"command": "curl https://gitlab.example.com/api/v4/projects/1/issues"}),
             ("Bash", {"command": "git status"}),

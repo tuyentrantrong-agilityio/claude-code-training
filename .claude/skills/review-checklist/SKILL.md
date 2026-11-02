@@ -1,11 +1,11 @@
 ---
 name: review-checklist
-description: Check the current branch against the CLAUDE.md rules (commit message format, no AI mentions, ASCII only, no generated or secret files, tests pass) before opening a merge request. Use when asked to review or prepare a branch for a merge request.
+description: Check the current branch against the CLAUDE.md rules (commit message format, no AI mentions, ASCII only, no generated or secret files, tests pass) before opening a pull request. Use when asked to review or prepare a branch for a pull request.
 argument-hint: "[base branch, default origin/practice]"
 allowed-tools: Bash(python .claude/skills/review-checklist/check_branch.py:*) Bash(python .claude/skills/run-tests/run_tests.py:*) Bash(git fetch:*) Bash(git diff:*) Bash(git log:*)
 ---
 
-Review the current branch before it becomes a merge request.
+Review the current branch before it becomes a pull request.
 
 1. Run `git fetch origin`, then
    `python .claude/skills/review-checklist/check_branch.py $ARGUMENTS`.

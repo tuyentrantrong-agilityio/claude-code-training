@@ -94,14 +94,15 @@ Repeat up to 3 iterations while some ticket is not ready:
    `lead` (`Stage answers. Folder: <folder>.`), then `ba` again for those tickets.
 
 Then run the scorer. Set `next: promote`, `gate: 3`. Tell the user: **Gate 3**, the
-scorecard summary and which tickets will become GitLab issues; type `approve gate 3`.
+scorecard summary and which tickets will become GitHub issues; type `approve gate 3`.
 
 ### `promote`
-For each ready ticket (plus any the user named), in order, create a GitLab issue in
-`tuyen.trantrong/claude-code-training`: title = the ticket H1 without `#`, description
-= the ticket content plus a line linking `<folder>/spec.md`, assigned to the user.
-Use the Claude in Chrome MCP tools on the new-issue page (the `gate_guard` hook
-blocks that page before Gate 3). Add `Issue: #<n>` under each ticket's `Status:`.
+For each ready ticket (plus any the user named), in order, create a GitHub issue in
+`tuyentrantrong-agilityio/claude-code-training`: title = the ticket H1 without `#`,
+body = the ticket content plus a line linking `<folder>/spec.md`, assigned to the user.
+Use the GitHub MCP tools if they are available, else
+`gh issue create --title ... --body-file <ticket> --assignee @me`
+(the `gate_guard` hook blocks both before Gate 3). Add `Issue: #<n>` under each ticket's `Status:`.
 Set `next: reveal`, `gate: none`.
 
 ### `reveal`
@@ -123,7 +124,7 @@ Set `next: reveal`, `gate: none`.
    say. Apply their corrections and run the scorer again.
 
 Set `next: done`. Suggest committing the folder on a `docs/kickoff-<slug>` branch and
-opening a merge request into `practice`.
+opening a pull request into `practice`.
 
 ### `done`
 Say the kickoff is finished. Start a new one only if the user asks (`/kickoff new`).

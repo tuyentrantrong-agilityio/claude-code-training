@@ -1,4 +1,4 @@
-"""Check the current branch against the rules in CLAUDE.md before a merge request.
+"""Check the current branch against the rules in CLAUDE.md before a pull request.
 
 Usage: python .claude/skills/review-checklist/check_branch.py [base]
 base defaults to origin/practice. Exit code is 1 if any check fails.

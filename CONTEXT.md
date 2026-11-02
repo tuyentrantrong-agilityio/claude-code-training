@@ -25,7 +25,9 @@ or spec relies on it.
 - **Test matrix**: QA's table of test cases derived from the acceptance criteria.
 - **Open question**: something a ticket does not decide yet; it blocks work until answered.
 - **Decision**: an answer recorded in the ticket, with who took it (dev, BA) and why.
-- **Merge request (MR)**: the only way code reaches `practice`; `main` only receives `practice` for a release.
+- **Pull request (PR)**: the only way code reaches `practice`; `main` only receives `practice` for a release.
+  Merge requests `!1` to `!27` are the same flow on the old GitLab home.
+- **CI check**: the GitHub Actions run on a PR; a PR is merged only when it is green.
 - **Release**: `practice` merged into `main` and tagged `vX.Y.Z`.
 - **Evidence**: proof a result is real (test output, screenshots, artifact), produced by Claude while running the tools, never by hand.
 
