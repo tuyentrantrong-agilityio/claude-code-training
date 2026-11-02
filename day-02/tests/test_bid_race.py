@@ -19,7 +19,7 @@ class ConcurrentBidTest(unittest.TestCase):
 
     def test_equal_bids_at_once_store_only_one(self):
         results = []
-        barrier = threading.Barrier(20)
+        barrier = threading.Barrier(20, timeout=10)
 
         def bid(user_id):
             conn = connect(self.path)

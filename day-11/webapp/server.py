@@ -1,19 +1,22 @@
 """Tiny web UI over day-02/auction: python -m webapp.server (run from day-11/)."""
 import json
 import os
+import re
 import sqlite3
 import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlsplit
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
-from auction.bids import SCHEMA, BidTooLowError, list_my_bids, place_bid  # noqa: E402
+from auction.bids import SCHEMA, BidTooLowError, list_my_bids, minimum_bid, place_bid  # noqa: E402
 
 USER = 42
 MAX_VALUE = 2**63 - 1  # SQLite INTEGER limit
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
+# One raw path segment (not percent-decoded, may be empty) between the fixed parts.
+MINIMUM_BID_PATH = re.compile(r"/api/auctions/([^/]*)/minimum-bid")
 
 
 def to_int(value):
@@ -21,6 +24,31 @@ def to_int(value):
     if isinstance(value, (bool, float)):
         raise ValueError("not an integer")
     return int(value)
+
+
+def parse_auction_id(segment):
+    """Digits only, leading zeros allowed, value 1 to 2^63-1; else None.
+
+    The length is checked before int(), which refuses strings over 4300 digits.
+    """
+    if not (segment.isascii() and segment.isdigit()):
+        return None
+    digits = segment.lstrip("0")
+    if not digits or len(digits) > len(str(MAX_VALUE)):
+        return None
+    value = int(digits)
+    return value if value <= MAX_VALUE else None
+
+
+def request_path(target):
+    """Path of a request target with ";params" kept (urlparse drops them).
+
+    Only an absolute-form target ("http://host/path") has a host to remove; any other
+    target, "//x/..." included, is a path as written.
+    """
+    if target.startswith(("http://", "https://")):
+        return urlsplit(target).path
+    return target.partition("?")[0]
 
 
 def make_server(port=8000):
@@ -58,7 +86,28 @@ def make_server(port=8000):
                     return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
+            match = MINIMUM_BID_PATH.fullmatch(request_path(self.path))
+            if match:
+                auction_id = parse_auction_id(match.group(1))
+                if auction_id is None:
+                    return self._send(400, {"error": "invalid auction_id"})
+                with lock:
+                    return self._send(200, minimum_bid(conn, auction_id))
             self._send(404, {"error": "not found"})
+
+        def do_HEAD(self):
+            # The headers a GET 404 would send, without the body.
+            body = json.dumps({"error": "not found"}).encode()
+            self.send_response(404)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+
+        def __getattr__(self, name):
+            # Every method without its own do_X answers 404 JSON, not the default 501 page.
+            if name.startswith("do_"):
+                return lambda: self._send(404, {"error": "not found"})
+            raise AttributeError(name)
 
         def do_POST(self):
             if self.path != "/api/bids":
@@ -81,7 +130,9 @@ def make_server(port=8000):
                 return self._send(409, {"error": str(exc)})
             self._send(201, {"id": bid_id})
 
-    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.db, server.db_lock = conn, lock  # lets tests seed bids from other users
+    return server
 
 
 def main():

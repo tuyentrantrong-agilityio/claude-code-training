@@ -79,24 +79,26 @@ class RejectLowBidTest(unittest.TestCase):
     def count(self):
         return self.conn.execute("SELECT COUNT(*) FROM bids").fetchone()[0]
 
-    def test_lower_and_equal_rejected(self):
-        for amount in (100, 150):
-            with self.assertRaises(BidTooLowError) as ctx:
-                place_bid(self.conn, ME, 7, amount, T + 1)
-            self.assertEqual(str(ctx.exception), "bid must be higher than 150")
+    # Minimum raise rule (intent/2026-11-02-minimum-raise): highest 150 -> at least 160.
+    def test_below_minimum_rejected(self):
+        for amount in (100, 150, 159):
+            with self.subTest(amount=amount):
+                with self.assertRaises(BidTooLowError) as ctx:
+                    place_bid(self.conn, ME, 7, amount, T + 1)
+                self.assertEqual(str(ctx.exception), "bid must be at least 160")
         self.assertEqual(self.count(), 1)
 
-    def test_just_above_accepted(self):
-        place_bid(self.conn, ME, 7, 151, T + 1)
+    def test_exact_minimum_accepted(self):
+        place_bid(self.conn, ME, 7, 160, T + 1)
         self.assertEqual(self.count(), 2)
 
     def test_first_bid_any_amount(self):
         place_bid(self.conn, ME, 9, 1, T)
         self.assertEqual(self.count(), 2)
 
-    def test_self_outbid_allowed(self):
+    def test_self_outbid_needs_the_step(self):
         place_bid(self.conn, ME, 8, 10, T)
-        place_bid(self.conn, ME, 8, 11, T + 1)
+        place_bid(self.conn, ME, 8, 20, T + 1)
         self.assertEqual(self.count(), 3)
 
 

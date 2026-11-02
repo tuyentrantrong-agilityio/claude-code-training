@@ -1,6 +1,6 @@
 ---
 name: fix-ticket
-description: Fix one ticket from a day folder in this training repo, from branch to merge request. Use when asked to fix, implement or work on a ticket file such as day-04/ticket-1.md.
+description: Fix one ticket from a day folder in this training repo, from branch to pull request. Use when asked to fix, implement or work on a ticket file such as day-04/ticket-1.md.
 argument-hint: "[path to ticket file]"
 disable-model-invocation: true
 ---
@@ -34,19 +34,22 @@ Fix the ticket in $ARGUMENTS by following these steps in order. Stop and report 
 - `git status` must list only files the ticket needs (no `__pycache__`).
 - `git diff origin/practice` must not touch other day folders.
 
-## 5. Commit and open the merge request
+## 5. Commit and open the pull request
 
 - One commit, message `<type>: <short description>`, lowercase, imperative,
   no trailing period, and no Co-Authored-By or any line about AI.
-- Push and open the MR into practice with GitLab push options:
+- Push the branch and open the PR into practice:
 
 ```
-git push -u origin <branch> -o merge_request.create -o merge_request.target=practice -o "merge_request.title=<commit message>" -o "merge_request.description=<what changed, why, how it was tested>"
+git push -u origin <branch>
+gh pr create --base practice --title "<commit message>" --body "<what changed, why, how it was tested>"
 ```
+
+- Wait for the CI check: `gh pr checks --watch`. Fix the code if it fails.
 
 - Never push to main or practice directly, never force push, never merge.
 
 ## 6. Report
 
 Reply with: the root cause in one line, the change, the test result
-(number of tests and pass/fail), the commit hash and the MR URL from the push output.
+(number of tests and pass/fail), the commit hash, the PR URL and the CI result.
