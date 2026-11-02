@@ -110,9 +110,26 @@ def parse_ticket(path):
 
     if FORBIDDEN.search(text):
         t.problems.append("contains TBD, TODO or ???")
-    if t.status == "ready" and t.open_blocking:
-        t.problems.append(f"Status is ready but {len(t.open_blocking)} blocking question(s) are open")
+    if t.status == "ready":
+        check_ready(t)
     return t
+
+
+def check_ready(t):
+    """Ready means a fresh Dev read the ticket and had nothing blocking to ask.
+
+    Answering a [B] question makes a ticket worth another Dev round, not ready:
+    only the next round shows whether the answer removed the guess.
+    """
+    if t.open_blocking:
+        t.problems.append(f"Status is ready but {len(t.open_blocking)} blocking question(s) are open")
+    elif t.dev_rounds == 0:
+        t.problems.append("Status is ready before any Dev round; a ticket is ready only after a Dev round")
+    elif any(q.blocking and q.source == "dev" and q.iteration == t.dev_rounds for q in t.questions):
+        t.problems.append(
+            f"Status is ready but Dev round {t.dev_rounds} raised a [B] question; "
+            "keep it draft until a Dev round raises none"
+        )
 
 
 def check_scenarios(t, body):

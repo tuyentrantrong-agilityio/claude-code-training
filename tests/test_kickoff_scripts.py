@@ -58,6 +58,27 @@ class LintTicketsTest(ProjectTestCase):
             "- None yet.", "- [B] (dev, iter 1) Which time zone is shown?")
         self.assertTrue(any("blocking question" in p for p in self.problems(text)))
 
+    def ready_after(self, rounds, *questions):
+        text = GOOD_TICKET.replace("Status: draft", f"Status: ready\nDev rounds: {rounds}")
+        return self.problems(text.replace("- None yet.", "\n".join(questions) or "- None yet."))
+
+    def test_ready_right_after_answering_a_dev_blocker(self):
+        # What happened to T-03 in the minimum raise kickoff: the BA answered round 1's
+        # [B] questions and set ready without a second Dev read.
+        problems = self.ready_after(1, "- [B] (dev, iter 1) Which time zone? -> answered in ticket body (iter 1)")
+        self.assertTrue(any("Dev round 1 raised a [B] question" in p for p in problems))
+
+    def test_ready_after_a_clean_dev_round(self):
+        self.assertEqual(self.ready_after(1), [])
+        self.assertEqual(self.ready_after(
+            2,
+            "- [B] (dev, iter 1) Which time zone? -> answered in ticket body (iter 1)",
+            "- [N] (dev, iter 2) Show seconds? -> BA decision: no seconds, because bidders plan by minute.",
+        ), [])
+
+    def test_ready_before_any_dev_round(self):
+        self.assertTrue(any("before any Dev round" in p for p in self.ready_after(0)))
+
     def test_matrix_coverage(self):
         self.write_ticket()
         (self.folder / "test-matrix.md").write_text(MATRIX, encoding="utf-8")

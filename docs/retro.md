@@ -17,7 +17,7 @@ a script in CI, or a rule that loads with the files it covers.
 | T-03 shipped with three endpoint bugs that passed every test | `/review-pr` with the `reviewer` agent before or after merge; findings kept in `evidence/T-NN/review.md` |
 | Page JavaScript had no automated test | `day-11/tests/js/hint_harness.js` runs the page script in Node; `run_tests.py` shows skipped tests so a missing Node is visible |
 | A subagent cannot write report files, so a stop hook checking the reviewer's file never fired | The reviewer replies; `/review-pr` saves the reply and checks it with `scripts/review_findings.py` |
-| The kickoff skill let the BA mark a ticket ready right after answering a blocking question | Kickoff skill and BA agent: a ticket is ready only after a Dev round with no `[B]` (see the kickoff skill fix) |
+| The kickoff skill let the BA mark a ticket ready right after answering a blocking question (T-03, round 1) | `scripts/lint_tickets.py`, so CI and the `lint_on_stop` hook on the BA: `ready` only when the latest Dev round raised no `[B]`; the BA agent and kickoff skill say the same |
 
 ## Day 15 retro items (`day-15/retro-issues.md`)
 

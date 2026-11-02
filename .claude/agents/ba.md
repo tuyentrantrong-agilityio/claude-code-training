@@ -80,9 +80,13 @@ For each open question:
   under `## Questions for the client (dev round)` as `### DQ<n> <title>` with an
   empty `- client:` line, naming the ticket.
 
-Never delete or reword a question line; only append the ` -> ` part. Set
-`Status: ready` only when no `[B]` line is open. Reply with how many questions you
-closed and how many went to the client.
+Never delete or reword a question line; only append the ` -> ` part.
+
+Status: set `Status: ready` only when no `[B]` line is open **and** iteration `<n>`
+raised no `[B]` from the Dev (only `[N]` lines, or none). If iteration `<n>` raised a
+`[B]`, leave the ticket `draft` even after you answer it: the next Dev round checks
+that your answer removed the guess. Reply with how many questions you closed, how
+many went to the client, and the ticket's status.
 
 ## Notes from the user
 

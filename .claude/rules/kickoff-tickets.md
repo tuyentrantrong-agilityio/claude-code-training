@@ -49,7 +49,9 @@ Then the API returns 201 and the bid is listed as winning
 
 ## Rules
 
-- `Status:` is `draft` or `ready`. Only the BA sets `ready`, and only when no blocking question is open.
+- `Status:` is `draft` or `ready`. Only the BA sets `ready`, and only when no blocking
+  question is open **and** the latest Dev round raised no `[B]`. Answering a Dev `[B]`
+  keeps the ticket draft for one more Dev round: only a fresh read shows the guess is gone.
 - `Dev rounds: <n>` (0-3) is added under `Status:` by `/kickoff` at the first Dev round.
   `Issue: #<n>` is added at the `promote` stage. Agents do not edit these two lines.
 - The story has all three lines: `As a`, `I want`, `So that`.
