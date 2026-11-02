@@ -81,7 +81,9 @@ def make_server(port=8000):
                 return self._send(409, {"error": str(exc)})
             self._send(201, {"id": bid_id})
 
-    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server.db, server.db_lock = conn, lock  # lets tests seed bids from other users
+    return server
 
 
 def main():

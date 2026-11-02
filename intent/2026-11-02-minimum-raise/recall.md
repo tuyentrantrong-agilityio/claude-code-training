@@ -30,3 +30,5 @@ judgement at the reveal; the user has the final say.
 - T-01 S1 keeps today's form behaviour after an accepted bid, while T-03 S6 says the
   fields keep their values after a 201. Align these when T-03 is built (T-03 is the later
   ticket and states the final behaviour).
+  Closed at the T-01 build: the page already keeps both fields after a 201
+  (`evidence/T-01/02-exact-minimum-accepted.jpg`), so the two tickets agree.

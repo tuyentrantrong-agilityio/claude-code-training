@@ -29,10 +29,23 @@ def connect(path=":memory:"):
     return conn
 
 
+STEP_LIMIT = 1000  # highest amount from which the larger step applies
+SMALL_STEP, LARGE_STEP = 10, 50
+
+
+def minimum_step(highest):
+    return SMALL_STEP if highest < STEP_LIMIT else LARGE_STEP
+
+
+def minimum_next_bid(highest):
+    """Lowest amount a new bid may offer; 1 when the auction has no active bid."""
+    return 1 if highest is None else highest + minimum_step(highest)
+
+
 class BidTooLowError(ValueError):
-    def __init__(self, highest):
-        super().__init__(f"bid must be higher than {highest}")
-        self.highest = highest
+    def __init__(self, minimum):
+        super().__init__(f"bid must be at least {minimum}")
+        self.minimum = minimum
 
 
 def highest_bid(conn, auction_id):
@@ -45,19 +58,22 @@ def highest_bid(conn, auction_id):
 
 
 def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
-    """Store a bid. Raises BidTooLowError unless it beats the auction's highest bid.
+    """Store a bid. Raises BidTooLowError unless it reaches the minimum next bid.
 
     The check and the insert are one statement, so concurrent bids cannot both pass.
+    The check is written as `existing > amount - step` so it cannot overflow.
     """
     cur = conn.execute(
         "INSERT INTO bids (user_id, auction_id, amount, status, created_at) "
         "SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS ("
-        "SELECT 1 FROM bids WHERE auction_id = ? AND status = 'active' AND amount >= ?)",
-        (user_id, auction_id, amount, status, created_at, auction_id, amount),
+        "SELECT 1 FROM bids WHERE auction_id = ? AND status = 'active' AND amount > "
+        "? - CASE WHEN amount < ? THEN ? ELSE ? END)",
+        (user_id, auction_id, amount, status, created_at, auction_id, amount,
+         STEP_LIMIT, SMALL_STEP, LARGE_STEP),
     )
     conn.commit()
     if cur.rowcount == 0:
-        raise BidTooLowError(highest_bid(conn, auction_id)["amount"])
+        raise BidTooLowError(minimum_next_bid(highest_bid(conn, auction_id)["amount"]))
     return cur.lastrowid
 
 

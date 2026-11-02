@@ -29,11 +29,13 @@ There is no auction table: an auction exists as soon as it has a bid.
 
 - **Highest bid** of an auction: the `active` bid with the largest amount; on equal
   amounts the earliest `created_at`, then the lowest `id` (`highest_bid`).
-- **Placing a bid** (`place_bid`): accepted only if the amount is greater than the
-  highest active amount of that auction, from any user, including the bidder's own.
-  The first bid on an auction may be any amount. The check and the insert are one
-  SQL statement, so of several equal bids sent at once exactly one is stored.
-  A rejected bid raises `BidTooLowError` with the message `bid must be higher than <highest>`.
+- **Placing a bid** (`place_bid`): accepted only if the amount is at least the
+  **minimum next bid** of that auction: highest active amount H plus the **minimum step**
+  (10 while H is under 1000, 50 from 1000), from any user, including the bidder's own.
+  The first bid on an auction may be any amount (`minimum_next_bid` is 1). The check
+  and the insert are one SQL statement, so of several equal bids sent at once exactly
+  one is stored. A rejected bid raises `BidTooLowError` with the message
+  `bid must be at least <minimum next bid>`. (Since T-01, intent/2026-11-02-minimum-raise.)
 - **Standing** of a bid in a listing: `winning` if it is the highest bid of its
   auction, `outbid` if it is active but not the highest, `null` if it is not active.
 - **My bids** (`list_my_bids`): the user's bids, newest first by (`created_at`, `id`).
@@ -49,7 +51,7 @@ memory and resets on restart. One shared connection is guarded by a lock.
 |---|---|
 | `GET /` | The "My bids" page (`index.html`) |
 | `GET /api/bids?limit=&cursor=` | 200 `{"items": [...], "next_cursor": ...}`; 400 `{"error": ...}` for a bad limit or cursor |
-| `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be higher than <highest>` |
+| `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be at least <minimum next bid>` |
 | anything else | 404 `{"error": "not found"}` |
 
 The page has a form (Auction ID, Amount, Place bid), a page size field with

@@ -23,7 +23,7 @@ new tab and work there. Run these steps and take a screenshot with
 
 1. Clear localStorage with the javascript tool, open the page: no outbid banner.
 2. Page size 10, Reload: Winning, Outbid and "-" are shown in the Standing column.
-3. Bid 100 on auction 8 (highest is 300): the message "bid must be higher than 300".
+3. Bid 100 on auction 8 (highest is 300): the message "bid must be at least 310".
 4. Bid 400 on auction 8: new bid is Winning and the old own bid is Outbid.
 5. Set localStorage `standing` to `{"7":"winning"}` and reload: the outbid banner.
 

@@ -41,7 +41,8 @@ class ServerTest(unittest.TestCase):
         self.call("/api/bids", {"auction_id": "7", "amount": "150"})
         status, body = self.call("/api/bids", {"auction_id": "7", "amount": "150"})
         self.assertEqual(status, 409)
-        self.assertEqual(body["error"], "bid must be higher than 150")
+        # Minimum raise rule: highest 150 -> at least 160 (was "higher than 150").
+        self.assertEqual(body["error"], "bid must be at least 160")
 
     def test_huge_numbers_rejected_with_400(self):
         status, body = self.call("/api/bids", {"auction_id": "1", "amount": str(2**70)})

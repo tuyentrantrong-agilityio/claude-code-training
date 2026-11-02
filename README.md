@@ -6,7 +6,7 @@ where Claude drafts and checks, and a human decides every merge.
 
 ## The product
 
-Bidders place bids on auctions. A bid must beat the current highest bid, and each
+Bidders place bids on auctions. A bid must beat the current highest bid by a minimum step, and each
 bid in "My bids" shows whether it is winning or outbid. The full behaviour is in
 [`docs/baseline.md`](docs/baseline.md), the terms in [`CONTEXT.md`](CONTEXT.md).
 
