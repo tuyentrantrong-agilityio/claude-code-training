@@ -7,6 +7,7 @@
   body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; }
   label { display: block; margin: .5rem 0; }
   #error { color: #b00020; min-height: 1.2em; }
+  #min-bid-hint { min-height: 1.2em; }
   table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
   td, th { border: 1px solid #ccc; padding: .3rem .5rem; text-align: left; }
 </style>
@@ -16,6 +17,7 @@
 <form id="bid-form">
   <label>Auction ID <input id="auction_id" name="auction_id" type="text"></label>
   <label>Amount <input id="amount" name="amount" type="text"></label>
+  <p id="min-bid-hint" aria-live="polite" style="color:#666"></p>
   <button type="submit" id="place">Place bid</button>
 </form>
 <p id="error" role="alert"></p>
@@ -94,14 +96,53 @@ async function load(reset) {
   console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
 }
 
+// Auction ID rule for the hint: trimmed, digits only, 1 to 2^63-1; leading zeros dropped.
+const MAX_ID = 9223372036854775807n;
+function hintAuctionId(raw) {
+  const s = raw.trim();
+  if (!/^[0-9]+$/.test(s)) return null;
+  const n = BigInt(s);
+  return n >= 1n && n <= MAX_ID ? n.toString() : null;
+}
+
+// Minimum bid hint: cleared at once, then filled only by the answer for the latest request.
+let hintSeq = 0;
+async function refreshHint() {
+  const mySeq = ++hintSeq;
+  $("min-bid-hint").textContent = "";
+  const id = hintAuctionId($("auction_id").value);
+  if (id === null) return;
+  let res, text;
+  try {
+    res = await fetch("/api/auctions/" + id + "/minimum-bid");
+    text = await res.text();
+  } catch (e) { return; }
+  if (mySeq !== hintSeq || !res.ok) return;
+  // Read minimum_bid from the raw text so large amounts keep every digit.
+  const digits = text.match(/"minimum_bid":\s*(\d+)/);
+  if (!digits) return;
+  $("min-bid-hint").textContent = JSON.parse(text).highest === null
+    ? "No bids yet: any amount from 1"
+    : "Minimum next bid: " + digits[1];
+}
+
+$("auction_id").addEventListener("input", refreshHint);
+
 $("bid-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const res = await fetch("/api/bids", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ auction_id: $("auction_id").value, amount: $("amount").value }),
-  });
-  const data = await res.json();
+  let res, data;
+  try {
+    res = await fetch("/api/bids", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auction_id: $("auction_id").value, amount: $("amount").value }),
+    });
+    data = await res.json();
+  } catch (err) {
+    refreshHint();
+    return;
+  }
+  refreshHint();
   if (!res.ok) { showError(data.error); return; }
   console.log("placed bid", data.id);
   // Own new bid is not an "outbid by someone else" event.
@@ -113,6 +154,7 @@ $("bid-form").addEventListener("submit", async (e) => {
 $("reload").addEventListener("click", () => load(true));
 $("more").addEventListener("click", () => load(false));
 load(true);
+if ($("auction_id").value) refreshHint();
 </script>
 </body>
 </html>

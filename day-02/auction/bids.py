@@ -57,6 +57,18 @@ def highest_bid(conn, auction_id):
     ).fetchone()
 
 
+def minimum_bid(conn, auction_id):
+    """Lookup body for GET /api/auctions/<id>/minimum-bid."""
+    top = highest_bid(conn, auction_id)
+    highest = top["amount"] if top else None
+    return {
+        "auction_id": auction_id,
+        "highest": highest,
+        "step": None if highest is None else minimum_step(highest),
+        "minimum_bid": minimum_next_bid(highest),
+    }
+
+
 def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
     """Store a bid. Raises BidTooLowError unless it reaches the minimum next bid.
 

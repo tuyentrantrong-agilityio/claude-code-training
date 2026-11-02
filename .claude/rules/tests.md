@@ -16,5 +16,8 @@ paths:
 - A bug fix starts with a test that fails on the old code.
 - Concurrency tests use a file database and a `threading.Barrier` with a timeout,
   so a failing thread cannot hang the run.
+- Page JavaScript is tested by running the page's own `<script>` in Node with a fake DOM
+  and fetch (`day-11/tests/js/hint_harness.js`, driven from `test_minimum_hint.py`).
+  Node is a tool on the machine, not a package: those tests skip when `node` is missing.
 - Tests do not touch the network or a real port other than port 0
   (`make_server(0)` picks a free one).
