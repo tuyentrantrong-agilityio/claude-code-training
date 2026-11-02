@@ -17,6 +17,10 @@ or spec relies on it.
 - **Minimum step**: how much a new bid must add to the highest bid: 10 while the highest amount is under 1000, 50 when it is 1000 or more. Fixed, the same on every auction.
 - **Minimum next bid**: the lowest amount a new bid on an auction may have: highest bid amount plus the minimum step, or 1 when the auction has no active bid.
 - **Minimum bid hint**: the grey line under the Amount field of the bid form that shows the minimum next bid for the auction typed in Auction ID.
+- **Cancel (a bid)**: the bidder's own action that sets one of their active bids to status `cancelled`. The bid stays in My bids; it no longer counts for the highest bid. No undo.
+- **Cancelled bid**: a bid with status `cancelled`. Listed in My bids with standing `null`; ignored for the highest bid and the minimum next bid.
+- **Cancel window**: the 5 minutes (300000 ms, inclusive) after a bid's `created_at` during which its owner may cancel it.
+- **Cancel notice**: the line on the My bids page that confirms a cancel: "Bid N on auction M cancelled."
 - **Page size / limit**: how many bids one page returns, 1 to 100.
 - **Cursor**: the opaque `next_cursor` string that asks for the page after the current one.
 
