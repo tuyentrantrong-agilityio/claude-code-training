@@ -9,6 +9,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from check_matrix import check  # noqa: E402
 from lint_tickets import lint  # noqa: E402
+from release_notes import parse_merges, render as render_notes  # noqa: E402
 from review_findings import check as check_findings, counts as findings_counts  # noqa: E402
 from score_kickoff import render  # noqa: E402
 
@@ -185,3 +186,40 @@ class ReviewFindingsTest(unittest.TestCase):
     def test_text_before_the_title_or_non_ascii(self):
         self.assertIn("first line must be '# Review: <branch>'", check_findings("Here it is:\n" + GOOD_FINDINGS))
         self.assertIn("plain ASCII only", check_findings(GOOD_FINDINGS.replace("runs after", "runs " + chr(0x2192) + " after")))
+
+
+MERGE_LOG = (
+    "Merge pull request #13 from me/fix/edges\x1ffix: answer every bad request with json\n\x1e"
+    "Merge branch 'wip' into feat/x\x1f\x1e"
+    "Merge pull request #12 from me/feat/reviewer\x1ffeat: add a reviewer agent\n\x1e"
+    "Merge branch 'feat/kickoff' into 'practice'\x1ffeat: add kickoff harness\n\n"
+    "See merge request me/repo!27\n\x1e"
+    "Merge pull request #1 from me/odd\x1fMove to GitHub\n\x1e"
+)
+
+
+class ReleaseNotesTest(ProjectTestCase):
+    def test_merges_from_github_and_gitlab_oldest_first(self):
+        self.assertEqual(parse_merges(MERGE_LOG), [
+            {"ref": "#1", "type": "chore", "title": "Move to GitHub"},
+            {"ref": "GitLab !27", "type": "feat", "title": "add kickoff harness"},
+            {"ref": "#12", "type": "feat", "title": "add a reviewer agent"},
+            {"ref": "#13", "type": "fix", "title": "answer every bad request with json"},
+        ])
+
+    def test_notes_group_changes_and_list_kickoff_tickets(self):
+        self.write_ticket(GOOD_TICKET.replace("Status: draft", "Status: ready\nIssue: #3"))
+        (self.folder / "evidence" / "T-01").mkdir(parents=True)
+        notes = render_notes("v0.2.0", "v0.1.0", "origin/practice", parse_merges(MERGE_LOG),
+                             [self.folder], today="2026-11-02")
+        self.assertIn("Range: `v0.1.0..origin/practice`, 4 merged changes.", notes)
+        self.assertIn("### Features\n\n- add kickoff harness (GitLab !27)\n- add a reviewer agent (#12)\n", notes)
+        self.assertIn("### Fixes\n\n- answer every bad request with json (#13)\n", notes)
+        self.assertIn("- T-01 Show when an auction ends: issue #3, built, evidence in `evidence/T-01/`", notes)
+        self.assertNotIn("### Docs", notes)
+
+    def test_notes_without_merges_or_kickoffs(self):
+        notes = render_notes("v0.2.1", "v0.2.0", "origin/practice", [], [], today="2026-11-03")
+        self.assertIn("0 merged changes.", notes)
+        self.assertIn("No merged changes in this range.", notes)
+        self.assertIn("No kickoff in this range.", notes)

@@ -13,6 +13,7 @@ for Claude Code training. Python stdlib only, no dependencies.
   score `python scripts/score_kickoff.py intent/<folder>`, matrix against real tests
   `python scripts/check_matrix.py intent/<folder>`
 - Review a PR with the reviewer agent: `/review-pr <n>` (workspace in `.review/`, gitignored)
+- Release notes: `python scripts/release_notes.py <version>`; a release: `/release <version>`
 
 ## Layout
 

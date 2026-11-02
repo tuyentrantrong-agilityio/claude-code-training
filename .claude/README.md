@@ -60,6 +60,7 @@ Loaded only when Claude works on matching files, so `CLAUDE.md` stays short.
 | review-checklist | Check a branch against the CLAUDE.md rules before a pull request |
 | review-pr | Prepare `.review/<branch>/` (worktree of the head, diff, context, checks), run the reviewer agent, report findings |
 | evidence | Start the app, drive it in Chrome through MCP, save screenshots and publish the run |
+| release | Notes from `scripts/release_notes.py`, practice into main, tag and GitHub release (user-triggered) |
 
 The slash command `/pr-description` is in `.claude/commands`.
 CI: `.github/workflows/ci.yml` runs every suite and lints every kickoff folder on each PR.
