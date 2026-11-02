@@ -9,7 +9,18 @@ import subprocess
 import sys
 
 COMMIT_FORMAT = re.compile(r"^(feat|fix|docs|test|refactor|chore): [a-z0-9](?:[^A-Z]*[^.A-Z\s])?$")
-AI_MENTION = re.compile(r"co-authored-by|generated with|\bclaude\b|\banthropic\b|\bai\b", re.IGNORECASE)
+# Credit to an AI as an author is not allowed; naming the tool as the subject
+# ("a playbook for shipping a feature with claude code") is fine.
+AI_TOOL = r"(?:an? |the )?(?:ai|claude|chatgpt|gpt|copilot|llm|anthropic)\b"
+ATTRIBUTION = re.compile(
+    r"co-authored-by"
+    r"|\bgenerated (?:with|by)\b"
+    r"|\b(?:written|created|made|authored|produced|captured|drafted|assisted|done|coded) (?:by|with) " + AI_TOOL +
+    r"|\bby " + AI_TOOL +
+    r"|\b(?:ai|claude|llm|gpt)[- ](?:generated|written|assisted)\b"
+    r"|noreply@anthropic\.com",
+    re.IGNORECASE,
+)
 FORBIDDEN_PATH = re.compile(r"(^|/)(__pycache__/|\.env($|\.(?!example$))|[^/]*\.pyc$)")
 
 
@@ -24,14 +35,14 @@ def check_subject(subject):
     """Return a problem for a commit subject, or None."""
     if not COMMIT_FORMAT.match(subject):
         return "subject is not '<type>: <short description>' in lowercase without a trailing period"
-    if AI_MENTION.search(subject):
-        return "subject mentions AI or Claude"
+    if ATTRIBUTION.search(subject):
+        return "subject credits AI or Claude as an author"
     return None
 
 
 def check_body(body):
-    if AI_MENTION.search(body):
-        return "message mentions AI or Claude"
+    if ATTRIBUTION.search(body):
+        return "message credits AI or Claude as an author"
     return None
 
 

@@ -18,6 +18,7 @@ a script in CI, or a rule that loads with the files it covers.
 | Page JavaScript had no automated test | `day-11/tests/js/hint_harness.js` runs the page script in Node; `run_tests.py` shows skipped tests so a missing Node is visible |
 | A subagent cannot write report files, so a stop hook checking the reviewer's file never fired | The reviewer replies; `/review-pr` saves the reply and checks it with `scripts/review_findings.py` |
 | The kickoff skill let the BA mark a ticket ready right after answering a blocking question (T-03, round 1) | `scripts/lint_tickets.py`, so CI and the `lint_on_stop` hook on the BA: `ready` only when the latest Dev round raised no `[B]`; the BA agent and kickoff skill say the same |
+| The attribution check blocked any word `claude`, so a true title about the tool ("a playbook for shipping a feature with claude code") had to be reworded | `check_branch.py` blocks AI credit (`Co-Authored-By`, "generated with", "by claude", "ai-generated") and allows the tool name; its tests now run in `run_tests.py` and CI |
 
 ## Day 15 retro items (`day-15/retro-issues.md`)
 
