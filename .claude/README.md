@@ -1,22 +1,40 @@
 # Claude Code automation in this repo
 
-Project settings live in `settings.json`. Hooks run on events, skills are
-tasks Claude follows on request. Run all tests with
-`python .claude/skills/run-tests/run_tests.py`.
+Project settings live in `settings.json`: permissions, the status line and the
+hooks. Agents play the kickoff roles, skills are procedures Claude follows, rules
+load on demand, hooks enforce what must never depend on Claude remembering.
+Run all tests with `python .claude/skills/run-tests/run_tests.py`.
+
+## Subagents (`.claude/agents`)
+
+| Agent | Role | Tools | Model | Writes |
+|---|---|---|---|---|
+| lead | The client: vague brief, private truth, answers in character | Read, Write, Edit, Glob | sonnet | client truth, `brief.md`, answers in `intake.md` |
+| ba | Intake, spec, ticket pack, Dev-round revisions | Read, Write, Edit, Glob, Grep | opus | `intake.md`, `spec.md`, `tickets/`, `CONTEXT.md` |
+| qa | Test matrix and blocking questions on gaps | Read, Write, Edit, Glob, Grep | sonnet | `test-matrix.md`, questions in tickets |
+| dev | Reads one ticket cold and lists what it would have to ask | Read, Glob, Grep | sonnet | nothing |
+
+What each role may read and write is enforced by `path_guard.py`, not only by its prompt.
 
 ## Hooks (`.claude/hooks`)
 
 | Event | Script | What it does |
 |---|---|---|
-| SessionStart | session_status.py | Adds branch, ahead/behind `origin/practice`, dirty file count and the main rules to the context; warns when on main or practice |
-| UserPromptSubmit | git_reminder.py | When the prompt mentions commit, push, merge, tag, branch or MR, adds the git rules from CLAUDE.md |
-| PreToolUse (Bash, PowerShell) | block_forbidden.py | Blocks force push, push to main or practice, `--no-verify`, `rm -rf` and bypasses of them |
-| PreToolUse (Write, Edit) | block_secrets.py | Blocks `.env` files, `__pycache__`, and content that looks like a token or private key |
-| PostToolUse (Write, Edit) | post_edit_check.py | Reports non-ASCII characters in the edited file; runs the tests of the day folder when a Python file there changed |
+| SessionStart | session_status.py | Branch, ahead/behind `origin/practice`, dirty files, main rules; warns on main or practice |
+| SessionStart, status line | load_state.py | Active kickoff, next stage and any waiting gate |
+| UserPromptSubmit | git_reminder.py | Adds the git rules when the prompt is about commit, push, merge, tag, branch or MR |
+| UserPromptSubmit | record_approval.py | Turns the user's `approve gate N` into `approvals/gate-N.md`; nothing else counts as approval |
+| PreToolUse (Bash, PowerShell) | block_forbidden.py | Blocks force push, push to main or practice, `--no-verify`, `rm -rf` and bypasses |
+| PreToolUse (Write, Edit) | block_secrets.py | Blocks `.env` files, `__pycache__`, and content that looks like a token or key |
+| PreToolUse (file tools, shell) | path_guard.py | Keeps each kickoff role inside its files; hides the client truth until the reveal; nobody writes approvals |
+| PreToolUse (shell, MCP) | gate_guard.py | No GitLab issue (browser new-issue page, MCP, `glab`, API POST) before Gate 3 |
+| PostToolUse (Write, Edit) | post_edit_check.py | Reports non-ASCII characters; runs the day's tests when a Python file there changed |
+| SubagentStop (ba, qa) | lint_on_stop.py | Keeps the BA or QA working once if `scripts/lint_tickets.py` fails on its files |
+| Stop | notify_gate.py | Desktop notification when a kickoff gate waits for the user |
 
-Tests: `python .claude/hooks/test_block_forbidden.py` and
-`python .claude/hooks/test_hooks_extra.py`. The hooks are guardrails against
-mistakes, not a sandbox.
+`permissions.deny` also blocks Write and Edit under `intent/*/approvals/`.
+Tests: `tests/` (kickoff hooks and scripts), `.claude/hooks/test_block_forbidden.py`,
+`.claude/hooks/test_hooks_extra.py`. The hooks are guardrails against mistakes, not a sandbox.
 
 ## Rules (`.claude/rules`)
 
@@ -24,13 +42,18 @@ Loaded only when Claude works on matching files, so `CLAUDE.md` stays short.
 
 | Rule | Applies to |
 |---|---|
-| tickets.md | `day-*/ticket*.md` and the planning files `day-*/0*-*.md` |
+| kickoff-tickets.md | `intent/**`, `scripts/lint_tickets.py` |
+| test-matrix.md | `intent/**`, `scripts/lint_tickets.py` |
+| tickets.md | `day-*/ticket*.md` and the planning files `day-*/0*-*.md` (before the kickoff harness) |
 | tests.md | `day-*/tests/**` and `.claude/**/test_*.py` |
 
 ## Skills (`.claude/skills`)
 
 | Skill | Use |
 |---|---|
+| kickoff | Run the feature kickoff one stage per call, stopping at the three gates |
+| write-ticket | Write a ticket that passes the zero-questions test (BA) |
+| test-matrix | Draft the test matrix with derived edge cases (QA) |
 | fix-ticket | Fix one ticket from branch to merge request |
 | run-tests | Run every unittest suite and print one summary table |
 | review-checklist | Check a branch against the CLAUDE.md rules before a merge request |

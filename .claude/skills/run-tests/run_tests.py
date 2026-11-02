@@ -1,8 +1,8 @@
 """Run every unittest suite in the repo and print one summary table.
 
 Usage: python .claude/skills/run-tests/run_tests.py [day-NN ...] [--save PATH]
-With no day given it runs every day-NN folder that has a tests directory, and
-the hook tests in .claude/hooks. Exit code is 1 if any suite fails.
+With no day given it runs every day-NN folder that has a tests directory, the
+kickoff harness tests in tests/, and the hook tests in .claude/hooks. Exit code is 1 if any suite fails.
 """
 
 import glob
@@ -40,6 +40,8 @@ def suites(days):
         if os.path.isdir(os.path.join(folder, "tests")) and (not days or name in days):
             found.append((name, [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "."], folder))
     if not days:
+        if os.path.isdir(os.path.join(ROOT, "tests")):
+            found.append(("tests (kickoff harness)", [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "."], ROOT))
         for path in sorted(glob.glob(os.path.join(ROOT, ".claude", "hooks", "test_*.py"))):
             found.append((".claude/hooks/" + os.path.basename(path), [sys.executable, path], ROOT))
     return found

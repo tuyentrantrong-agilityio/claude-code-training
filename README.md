@@ -22,13 +22,35 @@ cd day-11 && python -m webapp.server          # http://127.0.0.1:8000
 python .claude/skills/run-tests/run_tests.py   # every test suite, one summary
 ```
 
+## Run a feature kickoff
+
+A client asks for a feature; four agents (client, BA, QA, Dev) turn the vague brief
+into a ticket pack a developer can build without asking a single question. A human
+approves every gate. Open the repo in Claude Code, then:
+
+```text
+/kickoff                 start, or advance one stage
+approve gate 1           approve the stage Claude stopped at (1, 2 or 3)
+```
+
+| Stage | Who | Writes | Then |
+|---|---|---|---|
+| `brief` | lead | `.kickoff-private/client-truth.md`, `brief.md` | continue |
+| `intake` | ba | `intake.md` (requirements, assumptions, open questions) | **Gate 1** |
+| `answers` | lead | client answers in `intake.md` | continue |
+| `pack` | ba, then qa | `spec.md`, `tickets/`, `test-matrix.md` | **Gate 2** |
+| `dev-round` | dev per ticket, ba | questions in tickets, BA revisions, `scorecard.md` | **Gate 3** |
+| `promote` | Claude | GitLab issues from ready tickets | continue |
+| `reveal` | Claude | client truth into the folder, `recall.md`, final scorecard | done |
+
+Scores come from `scripts/score_kickoff.py`, never from an agent's opinion. The
+folder layout is in [`intent/README.md`](intent/README.md).
+
 ## How work flows
 
 | Step | Who | Output |
 |---|---|---|
-| Brief and intake | Client, BA | `00-client-brief.md`, `01-intake.md` with open questions |
-| Spec and tickets | BA | `02-spec.md`, `ticket-T*.md` with Given/When/Then |
-| Test matrix | QA | `03-test-matrix.md` |
+| Kickoff | `/kickoff` with the lead, ba, qa and dev agents | `intent/<date>-<slug>/` ticket pack, scorecard |
 | Build | Dev with Claude, plan mode first | One branch and one MR per ticket into `practice` |
 | Review | `/code-review`, `review-checklist`, browser check | Findings fixed in their own MR |
 | Evidence | Claude through `/evidence` | Screenshots, test output and an artifact page |
@@ -39,9 +61,12 @@ python .claude/skills/run-tests/run_tests.py   # every test suite, one summary
 | Feature | Where |
 |---|---|
 | Project memory | `CLAUDE.md` (short, always loaded), `CONTEXT.md`, `docs/baseline.md` |
-| Rules loaded on demand | `.claude/rules/tickets.md`, `.claude/rules/tests.md` |
-| Hooks | `.claude/hooks/`: session status, git rule reminder, command guard, secret guard, ASCII and test check after edits |
-| Skills | `.claude/skills/`: `fix-ticket`, `run-tests`, `review-checklist`, `evidence` |
+| Subagents | `.claude/agents/`: `lead`, `ba`, `qa`, `dev`, each with its own tools, model and file access |
+| Rules loaded on demand | `.claude/rules/`: kickoff tickets, test matrix, day tickets, tests |
+| Hooks | `.claude/hooks/`: kickoff state, gate approvals, role file access, issue guard, lint on subagent stop, gate notification, command and secret guards, ASCII and test check after edits |
+| Skills | `.claude/skills/`: `kickoff`, `write-ticket`, `test-matrix`, `fix-ticket`, `run-tests`, `review-checklist`, `evidence` |
+| Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py` (tests in `tests/`) |
+| Status line | the kickoff stage and whether a gate is waiting |
 | Slash command | `.claude/commands/mr-description.md` |
 | MCP | Claude in Chrome drives the web app for evidence; `.mcp.json` declares Playwright |
 | Loop | `.claude/loop.md`: what `/loop` checks on the `practice` branch |
