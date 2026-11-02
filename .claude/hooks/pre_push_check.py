@@ -7,7 +7,9 @@ not stop it; this hook does. Before `git push` of a branch it runs
 the push, with the failing lines, if any check fails.
 
 Not checked: pushing a tag (`git push origin v0.2.0`, `--tags`), and pushes while on
-main or practice (block_forbidden.py already refuses those).
+main or practice (block_forbidden.py already refuses those). The match is on the command
+text, so a command that only mentions `git push` (in an echo, say) is also held while
+the checklist fails; that errs on the safe side.
 """
 
 import re
