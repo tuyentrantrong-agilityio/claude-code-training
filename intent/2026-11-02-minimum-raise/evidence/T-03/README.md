@@ -7,6 +7,9 @@ localStorage cleared, page driven in Chrome through the Claude in Chrome tools.
 Report page: https://claude.ai/artifact/Lizh2Wf8RGbE7FZtBAr6aP (opens only for people it
 is shared with). Everything on it is also in this folder.
 
+Review: [review.md](review.md), by the `reviewer` agent after the merge (2 major, 2 minor),
+with the majors reproduced on a live server.
+
 ## Screenshots
 
 1. Type 8: "Minimum next bid: 310".

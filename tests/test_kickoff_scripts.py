@@ -1,6 +1,7 @@
 """scripts/lint_tickets.py and scripts/score_kickoff.py."""
 
 import sys
+import unittest
 
 from tests.helpers import GOOD_TICKET, MATRIX, REPO, ProjectTestCase
 
@@ -8,6 +9,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from check_matrix import check  # noqa: E402
 from lint_tickets import lint  # noqa: E402
+from review_findings import check as check_findings, counts as findings_counts  # noqa: E402
 from score_kickoff import render  # noqa: E402
 
 
@@ -147,3 +149,39 @@ class CheckMatrixTest(ProjectTestCase):
         problems, _ = check(self.folder)
         self.assertEqual(len(problems), 1)
         self.assertIn("M-002: planned test 'manual check in the browser'", problems[0])
+
+
+GOOD_FINDINGS = """\
+# Review: feat/x
+
+## Findings
+
+- [major] day-11/webapp/server.py:12 The 400 check runs after the lookup. Rule: T-03 S4
+
+## Checked
+
+- T-03 S1 to S6 against the code and tests.
+"""
+
+
+class ReviewFindingsTest(unittest.TestCase):
+    def test_good_findings(self):
+        self.assertEqual(check_findings(GOOD_FINDINGS), [])
+        self.assertEqual(findings_counts(GOOD_FINDINGS), {"blocker": 0, "major": 1, "minor": 0})
+
+    def test_clean_review_still_says_what_was_checked(self):
+        clean = GOOD_FINDINGS.replace(
+            "- [major] day-11/webapp/server.py:12 The 400 check runs after the lookup. Rule: T-03 S4", "- None.")
+        self.assertEqual(check_findings(clean), [])
+        self.assertIn("'## Checked' needs at least one line saying what was checked",
+                      check_findings(clean.split("## Checked")[0]))
+
+    def test_finding_needs_level_place_and_rule(self):
+        for bad in (" Rule: T-03 S4", "[major]", ":12"):
+            with self.subTest(removed=bad):
+                text = GOOD_FINDINGS.replace(bad, "[huge]" if bad == "[major]" else "")
+                self.assertTrue(any("finding not in the form" in p for p in check_findings(text)))
+
+    def test_text_before_the_title_or_non_ascii(self):
+        self.assertIn("first line must be '# Review: <branch>'", check_findings("Here it is:\n" + GOOD_FINDINGS))
+        self.assertIn("plain ASCII only", check_findings(GOOD_FINDINGS.replace("runs after", "runs " + chr(0x2192) + " after")))

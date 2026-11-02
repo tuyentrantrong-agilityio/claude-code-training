@@ -6,3 +6,6 @@ __pycache__/
 
 # The client agent's hidden notes stay out of git until the reveal stage moves them.
 .kickoff-private/
+
+# Reviewer agent workspace (diff, context, findings) from scripts/review_context.py.
+.review/

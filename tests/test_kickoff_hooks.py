@@ -157,6 +157,20 @@ class PathGuardTest(ProjectTestCase):
             with self.subTest(command=command):
                 self.assertFalse(self.denied(self.call("Bash", command=command)))
 
+    def test_reviewer_reads_the_repo_but_not_private_notes(self):
+        for rel in ("day-11/webapp/server.py", f"{FOLDER}/brief.md", "CLAUDE.md", ".review/x/context.md"):
+            with self.subTest(rel=rel):
+                self.assertFalse(self.denied(self.call("Read", "reviewer", file_path=self.path(rel))))
+        self.set_state("done")  # even after the reveal
+        self.assertTrue(self.denied(self.call("Read", "reviewer", file_path=self.path(".kickoff-private/client-truth.md"))))
+        self.assertTrue(self.denied(self.call("Grep", "reviewer", pattern="x", path=self.path(".kickoff-private"))))
+
+    def test_reviewer_writes_nothing(self):
+        for rel in ("day-11/webapp/server.py", f"{FOLDER}/tickets/T-01-x-y.md", ".review/b/findings.md"):
+            with self.subTest(rel=rel):
+                self.assertTrue(self.denied(self.call("Write", "reviewer", file_path=self.path(rel))))
+        self.assertTrue(self.denied(self.call("Bash", "reviewer", command="git diff")))
+
     def test_main_conversation_cannot_read_private_notes_before_reveal(self):
         self.assertTrue(self.denied(self.call("Read", file_path=self.path(".kickoff-private/client-truth.md"))))
         self.assertTrue(self.denied(self.call("Bash", command="cat .kickoff-private/client-truth.md")))
@@ -205,3 +219,4 @@ class SessionHooksTest(ProjectTestCase):
     def test_qa_only_answers_for_the_matrix(self):
         self.write_ticket(GOOD_TICKET.replace("So that I can bid before it closes\n", ""))
         self.assertEqual(self.run_hook("lint_on_stop.py", {"agent_type": "qa"}).returncode, 0)
+

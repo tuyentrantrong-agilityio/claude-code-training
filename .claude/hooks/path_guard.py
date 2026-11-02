@@ -5,7 +5,8 @@ the client's private notes, would make the kickoff scores meaningless. An agent'
 `tools` list limits which tools it has; this hook limits which paths they touch.
 
 The hook input has `agent_type` (the subagent's name) when a subagent makes the call.
-- lead, ba, qa, dev: read and write only the paths in READ and WRITE. No Bash.
+- lead, ba, qa, dev, reviewer: read and write only the paths in READ and WRITE. No Bash.
+  The reviewer reads everything except `.kickoff-private/` and writes nothing.
   Glob and Grep need a `path` inside the allowed area.
 - Everyone else (the main conversation, other subagents): no reading of
   `.kickoff-private/` before the reveal stage, no writing there at all.
@@ -30,12 +31,15 @@ READ = {
     "qa": COMMON + [".claude/rules/*", "intent/*/spec.md", "intent/*/tickets/*", "intent/*/test-matrix.md"],
     "dev": COMMON + [".claude/rules/*", "intent/*/spec.md", "intent/*/tickets/*",
                      "day-02/auction/*", "day-02/tests/*", "day-11/webapp/*", "day-11/tests/*"],
+    # The reviewer reads the whole repo except the client's private notes (checked below).
+    "reviewer": ["*"],
 }
 WRITE = {
     "lead": [".kickoff-private/client-truth.md", "intent/*/brief.md", "intent/*/intake.md"],
     "ba": ["intent/*/intake.md", "intent/*/spec.md", "intent/*/tickets/*.md", "CONTEXT.md"],
     "qa": ["intent/*/test-matrix.md", "intent/*/tickets/*.md"],
     "dev": [],
+    "reviewer": [],
 }
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 SEARCH_TOOLS = {"Glob", "Grep"}
@@ -107,6 +111,8 @@ def decide(payload):
     if reason:
         return reason
     role = payload.get("agent_type") or ""
+    if role == "reviewer" and (rel == PRIVATE or rel.startswith(PRIVATE + "/")):
+        return "the reviewer agent never reads the client's private notes"
     if role in READ:
         return check_role(role, tool, rel, raw)
     return check_others(tool, rel, command, read_state(current_folder(root))["next"])
