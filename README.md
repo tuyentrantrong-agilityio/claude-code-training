@@ -65,11 +65,11 @@ folder layout is in [`intent/README.md`](intent/README.md).
 | Rules loaded on demand | `.claude/rules/`: kickoff tickets, test matrix, day tickets, tests |
 | Hooks | `.claude/hooks/`: kickoff state, gate approvals, role file access, issue guard, lint on subagent stop, gate notification, command and secret guards, ASCII and test check after edits |
 | Skills | `.claude/skills/`: `kickoff`, `write-ticket`, `test-matrix`, `fix-ticket`, `run-tests`, `review-checklist`, `evidence` |
-| Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py` (tests in `tests/`) |
+| Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py`, `scripts/check_matrix.py` (tests in `tests/`) |
 | Status line | the kickoff stage and whether a gate is waiting |
 | Slash command | `.claude/commands/pr-description.md` |
 | MCP | `.mcp.json`: GitHub (issues at the kickoff `promote` stage) and Playwright; Claude in Chrome drives the web app for evidence |
-| CI | `.github/workflows/ci.yml`: every test suite, kickoff lint and the CLAUDE.md commit check on each PR |
+| CI | `.github/workflows/ci.yml`: every test suite, kickoff lint, test matrix against real tests and the CLAUDE.md commit check on each PR |
 | Loop | `.claude/loop.md`: what `/loop` checks on the `practice` branch |
 
 Details of every hook and skill are in [`.claude/README.md`](.claude/README.md).
