@@ -1,0 +1,25 @@
+test_equal_bids_at_once_store_only_one (tests.test_bid_race.ConcurrentBidTest.test_equal_bids_at_once_store_only_one) ... ok
+test_malformed_cursors_raise_value_error (tests.test_bid_standing.CursorTest.test_malformed_cursors_raise_value_error) ... ok
+test_first_bid_any_amount (tests.test_bid_standing.RejectLowBidTest.test_first_bid_any_amount) ... ok
+test_just_above_accepted (tests.test_bid_standing.RejectLowBidTest.test_just_above_accepted) ... ok
+test_lower_and_equal_rejected (tests.test_bid_standing.RejectLowBidTest.test_lower_and_equal_rejected) ... ok
+test_self_outbid_allowed (tests.test_bid_standing.RejectLowBidTest.test_self_outbid_allowed) ... ok
+test_beaten_bid_is_outbid (tests.test_bid_standing.StandingTest.test_beaten_bid_is_outbid) ... ok
+test_equal_amount_earlier_wins (tests.test_bid_standing.StandingTest.test_equal_amount_earlier_wins) ... ok
+test_inactive_bid_is_ignored_for_top (tests.test_bid_standing.StandingTest.test_inactive_bid_is_ignored_for_top) ... ok
+test_own_inactive_bid_has_no_standing (tests.test_bid_standing.StandingTest.test_own_inactive_bid_has_no_standing) ... ok
+test_own_lower_bid_is_outbid (tests.test_bid_standing.StandingTest.test_own_lower_bid_is_outbid) ... ok
+test_single_bid_is_winning (tests.test_bid_standing.StandingTest.test_single_bid_is_winning) ... ok
+test_standing_uses_whole_auction_not_page (tests.test_bid_standing.StandingTest.test_standing_uses_whole_auction_not_page) ... ok
+test_distinct_timestamps_returns_every_bid (tests.test_bids_pagination.CursorPaginationTest.test_distinct_timestamps_returns_every_bid) ... ok
+test_many_same_millisecond_bids_across_pages (tests.test_bids_pagination.CursorPaginationTest.test_many_same_millisecond_bids_across_pages) ... ok
+test_no_duplicates_across_pages (tests.test_bids_pagination.CursorPaginationTest.test_no_duplicates_across_pages) ... ok
+test_same_millisecond_bids_are_not_skipped (tests.test_bids_pagination.CursorPaginationTest.test_same_millisecond_bids_are_not_skipped) ... ok
+test_limit_above_max_is_rejected (tests.test_bids_pagination.LimitValidationTest.test_limit_above_max_is_rejected) ... ok
+test_limit_at_bounds_is_allowed (tests.test_bids_pagination.LimitValidationTest.test_limit_at_bounds_is_allowed) ... ok
+test_limit_below_one_is_rejected (tests.test_bids_pagination.LimitValidationTest.test_limit_below_one_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 1.053s
+
+OK

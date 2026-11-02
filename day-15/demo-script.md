@@ -64,10 +64,15 @@ logic was checked by hand in Chrome and recorded in ticket-T4.md.
 
 ## 6. Artifact (1 min)
 
-Honest status: there is no separate artifact yet. The deliverables are the
-ticket pack in day-12, the code, and the MR history. If asked, say this is a
-known gap and name what would count: a short release note or a screenshot of
-the Standing column.
+Say: Claude drove the web app through the Chrome MCP tools and published the
+run as an artifact (https://claude.ai/artifact/AuymGPyna4oTLg8cULs2V5) with
+five screenshots, the results and the test output. The same files are in
+day-15/evidence. I did not take any screenshot by hand.
+
+Likely question: What are the limits?
+Answer: One fixed user in the UI, so the competing bid was seeded by a script
+and the banner was triggered through localStorage. The JavaScript still has no
+automated test.
 
 ## 7. Shipped (2 min)
 

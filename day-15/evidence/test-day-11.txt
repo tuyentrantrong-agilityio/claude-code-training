@@ -1,0 +1,23 @@
+test_load_more_hidden_by_default (tests.test_index_html.IndexHtmlTest.test_load_more_hidden_by_default) ... ok
+test_outbid_banner_element (tests.test_index_html.IndexHtmlTest.test_outbid_banner_element) ... ok
+test_standing_column_header (tests.test_index_html.IndexHtmlTest.test_standing_column_header) ... ok
+test_standing_labels (tests.test_index_html.IndexHtmlTest.test_standing_labels) ... ok
+test_bad_cursor_is_400 (tests.test_server.ServerTest.test_bad_cursor_is_400) ... C:\Users\tuyen\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 400: 'Bad Request'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_huge_numbers_rejected_with_400 (tests.test_server.ServerTest.test_huge_numbers_rejected_with_400) ... ok
+test_index_served (tests.test_server.ServerTest.test_index_served) ... ok
+test_invalid_bid_is_400 (tests.test_server.ServerTest.test_invalid_bid_is_400) ... ok
+test_invalid_limit_is_400 (tests.test_server.ServerTest.test_invalid_limit_is_400) ... ok
+test_list_includes_standing (tests.test_server.ServerTest.test_list_includes_standing) ... ok
+test_low_bid_rejected_with_409 (tests.test_server.ServerTest.test_low_bid_rejected_with_409) ... C:\Users\tuyen\AppData\Local\Python\pythoncore-3.14-64\Lib\tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 409: 'Conflict'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_non_integer_json_values_rejected (tests.test_server.ServerTest.test_non_integer_json_values_rejected) ... ok
+test_pagination_walks_all_bids (tests.test_server.ServerTest.test_pagination_walks_all_bids) ... ok
+test_place_and_list (tests.test_server.ServerTest.test_place_and_list) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 5.644s
+
+OK
