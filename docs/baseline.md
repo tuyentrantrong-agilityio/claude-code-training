@@ -53,7 +53,10 @@ memory and resets on restart. One shared connection is guarded by a lock.
 | `GET /api/bids?limit=&cursor=` | 200 `{"items": [...], "next_cursor": ...}`; 400 `{"error": ...}` for a bad limit or cursor |
 | `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be at least <minimum next bid>` |
 | `GET /api/auctions/<auction_id>/minimum-bid` | 200 `{"auction_id", "highest", "step", "minimum_bid"}` (`highest` and `step` null and `minimum_bid` 1 with no active bid); 400 `{"error": "invalid auction_id"}` unless the raw segment is digits with value 1 to 2^63-1 |
-| anything else (other paths, `;params` in the path, any other method; HEAD gets the 404 headers only) | 404 `{"error": "not found"}` |
+| anything else (other paths, `minimum-bid;params`, any other method; HEAD gets the 404 headers only) | 404 `{"error": "not found"}` |
+
+`GET /` and `GET /api/bids` ignore `;params` in the path (they read it through `urlparse`);
+only the minimum-bid route treats them as an unknown path.
 
 The page has a form (Auction ID, Amount, minimum bid hint, Place bid), a page size field with
 Reload, a table (ID, Auction, Amount, Status, Standing) with "Load more", a red

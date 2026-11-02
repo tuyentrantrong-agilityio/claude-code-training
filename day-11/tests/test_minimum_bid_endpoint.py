@@ -100,7 +100,8 @@ class MinimumBidEndpointTest(unittest.TestCase):
 
     def test_many_leading_zeros_still_mean_the_auction(self):
         self.seed(7, 1200)
-        self.assertEqual(self.lookup("0" * 5000 + "7"), self.lookup(7))
+        body = {"auction_id": 7, "highest": 1200, "step": 50, "minimum_bid": 1250}
+        self.assertEqual(self.lookup("0" * 5000 + "7"), (200, body))
 
     def test_every_other_method_is_404_json(self):
         for method in ("OPTIONS", "TRACE", "PROPFIND"):
@@ -118,9 +119,14 @@ class MinimumBidEndpointTest(unittest.TestCase):
             conn.close()
 
     def test_path_parameters_are_an_unknown_path(self):
-        for path in ("/api/auctions/7/minimum-bid;x", "/api/auctions/7;x/minimum-bid"):
-            with self.subTest(path=path):
-                self.assertEqual(self.request(path)[0], 404 if path.endswith(";x") else 400)
+        # Review of PR #13: assert the whole answer, one case per line.
+        self.assertEqual(self.request("/api/auctions/7/minimum-bid;x"), (404, {"error": "not found"}))
+        self.assertEqual(self.request("/api/auctions/7;x/minimum-bid"), (400, {"error": "invalid auction_id"}))
+
+    def test_absolute_form_request_line_still_works(self):
+        self.seed(7, 1200)
+        url = f"http://127.0.0.1:{self.port}/api/auctions/7/minimum-bid?x=1"
+        self.assertEqual(self.request(url), (200, {"auction_id": 7, "highest": 1200, "step": 50, "minimum_bid": 1250}))
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlsplit
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
 from auction.bids import SCHEMA, BidTooLowError, list_my_bids, minimum_bid, place_bid  # noqa: E402
@@ -75,8 +75,9 @@ def make_server(port=8000):
                     return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
-            # The raw path: urlparse would drop ";params" and let "/minimum-bid;x" match.
-            match = MINIMUM_BID_PATH.fullmatch(self.path.partition("?")[0])
+            # urlsplit keeps ";params" in the path (urlparse drops them and "/minimum-bid;x"
+            # would match) and still accepts an absolute-form request line.
+            match = MINIMUM_BID_PATH.fullmatch(urlsplit(self.path).path)
             if match:
                 auction_id = parse_auction_id(match.group(1))
                 if auction_id is None:

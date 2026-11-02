@@ -43,3 +43,13 @@ Same live probe on the fixed server:
 Minor findings: M-038 now asserts status and body; M-029, M-030 and M-043 keep the page
 part and their endpoint parts moved to new rows M-045 to M-047, each with the test that
 asserts it. New rows M-048 to M-052 cover the fixes.
+
+## Second review (PR #13, the fix itself)
+
+`/review-pr 13` on the fix branch: 0 blocker, 1 major, 3 minor, all fixed on the same PR:
+
+- major: M-051's test checked only the status -> now asserts status and body for both paths.
+- minor: M-049 compared two live answers -> now a literal 200 body.
+- minor: matching the raw request target broke absolute-form request lines (404 instead
+  of 200) -> the route uses `urlsplit(...).path`, new test and matrix row M-053.
+- minor: docs/baseline.md said every route rejects `;params` -> now says only minimum-bid does.
