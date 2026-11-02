@@ -14,6 +14,9 @@ or spec relies on it.
 - **Standing**: `winning` (the bid is the highest bid), `outbid` (active but beaten) or `null` (not active).
 - **Outbid banner**: the line "You were outbid on auction N" shown when an auction that was winning at the last page load is outbid now.
 - **My bids**: the paged list of the current user's bids, newest first.
+- **Minimum step**: how much a new bid must add to the highest bid: 10 while the highest amount is under 1000, 50 when it is 1000 or more. Fixed, the same on every auction.
+- **Minimum next bid**: the lowest amount a new bid on an auction may have: highest bid amount plus the minimum step, or 1 when the auction has no active bid.
+- **Minimum bid hint**: the grey line under the Amount field of the bid form that shows the minimum next bid for the auction typed in Auction ID.
 - **Page size / limit**: how many bids one page returns, 1 to 100.
 - **Cursor**: the opaque `next_cursor` string that asks for the page after the current one.
 
