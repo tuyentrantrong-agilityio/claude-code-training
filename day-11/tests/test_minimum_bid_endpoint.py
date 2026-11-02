@@ -56,7 +56,8 @@ class MinimumBidEndpointTest(unittest.TestCase):
 
     def test_leading_zeros_and_query_string(self):
         self.seed(7, 1200)
-        expected = self.lookup(7)
+        expected = (200, {"auction_id": 7, "highest": 1200, "step": 50, "minimum_bid": 1250})
+        self.assertEqual(self.lookup(7), expected)
         self.assertEqual(self.lookup("007"), expected)
         self.assertEqual(self.request("/api/auctions/7/minimum-bid?x=1"), expected)
 
@@ -78,7 +79,6 @@ class MinimumBidEndpointTest(unittest.TestCase):
 
     def test_lookup_at_auction_id_1_is_valid(self):
         self.seed(1, 100)
-        # Whole body and status, as M-038 says (review of PR #9).
         self.assertEqual(self.lookup(1), (200, {"auction_id": 1, "highest": 100, "step": 10, "minimum_bid": 110}))
 
     def test_other_path_shapes_are_404(self):
@@ -90,8 +90,6 @@ class MinimumBidEndpointTest(unittest.TestCase):
         for method in ("POST", "PUT", "DELETE", "PATCH"):
             with self.subTest(method=method):
                 self.assertEqual(self.request("/api/auctions/7/minimum-bid", method), (404, {"error": "not found"}))
-
-    # Found by the reviewer agent on PR #9 (evidence/T-03/review.md).
 
     def test_very_long_segment_is_400_not_a_dropped_connection(self):
         for segment in ("9" * 5000, "1" + "0" * 19):
@@ -114,14 +112,15 @@ class MinimumBidEndpointTest(unittest.TestCase):
             conn.request("HEAD", "/api/auctions/7/minimum-bid")
             resp = conn.getresponse()
             self.assertEqual((resp.status, resp.getheader("Content-Type")), (404, "application/json"))
+            self.assertEqual(resp.getheader("Content-Length"), str(len(b'{"error": "not found"}')))
             self.assertEqual(resp.read(), b"")
         finally:
             conn.close()
 
     def test_path_parameters_are_an_unknown_path(self):
-        # Review of PR #13: assert the whole answer, one case per line.
         self.assertEqual(self.request("/api/auctions/7/minimum-bid;x"), (404, {"error": "not found"}))
         self.assertEqual(self.request("/api/auctions/7;x/minimum-bid"), (400, {"error": "invalid auction_id"}))
+        self.assertEqual(self.request("//x/api/auctions/7/minimum-bid"), (404, {"error": "not found"}))
 
     def test_absolute_form_request_line_still_works(self):
         self.seed(7, 1200)

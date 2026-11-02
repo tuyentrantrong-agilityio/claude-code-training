@@ -53,3 +53,14 @@ asserts it. New rows M-048 to M-052 cover the fixes.
 - minor: matching the raw request target broke absolute-form request lines (404 instead
   of 200) -> the route uses `urlsplit(...).path`, new test and matrix row M-053.
 - minor: docs/baseline.md said every route rejects `;params` -> now says only minimum-bid does.
+
+## Third review (PR #13 after the second fixes)
+
+`/review-pr 13` again: 0 blocker, 0 major, 5 minor, all fixed on the same PR, and the
+review loop stops here:
+
+- `GET //x/api/auctions/7/minimum-bid` routed to auction 7 (urlsplit read `//x` as a host)
+  -> `request_path()` strips a host only from `http://` or `https://` targets; now 404.
+- HEAD had no `Content-Length` -> sends the same headers as the GET 404.
+- M-047 compared live answers -> literal 200 body; its scenario is S1, not S4.
+- Review-history comments in the tests removed; the history lives in this file.

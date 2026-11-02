@@ -40,6 +40,17 @@ def parse_auction_id(segment):
     return value if value <= MAX_VALUE else None
 
 
+def request_path(target):
+    """Path of a request target with ";params" kept (urlparse drops them).
+
+    Only an absolute-form target ("http://host/path") has a host to remove; any other
+    target, "//x/..." included, is a path as written.
+    """
+    if target.startswith(("http://", "https://")):
+        return urlsplit(target).path
+    return target.partition("?")[0]
+
+
 def make_server(port=8000):
     # check_same_thread=False: the threaded server uses one connection.
     conn = sqlite3.connect(":memory:", check_same_thread=False)
@@ -75,9 +86,7 @@ def make_server(port=8000):
                     return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
-            # urlsplit keeps ";params" in the path (urlparse drops them and "/minimum-bid;x"
-            # would match) and still accepts an absolute-form request line.
-            match = MINIMUM_BID_PATH.fullmatch(urlsplit(self.path).path)
+            match = MINIMUM_BID_PATH.fullmatch(request_path(self.path))
             if match:
                 auction_id = parse_auction_id(match.group(1))
                 if auction_id is None:
@@ -87,8 +96,11 @@ def make_server(port=8000):
             self._send(404, {"error": "not found"})
 
         def do_HEAD(self):
+            # The headers a GET 404 would send, without the body.
+            body = json.dumps({"error": "not found"}).encode()
             self.send_response(404)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
 
         def __getattr__(self, name):
