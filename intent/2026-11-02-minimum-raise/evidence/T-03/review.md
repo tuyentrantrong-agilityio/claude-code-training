@@ -28,3 +28,39 @@ against a live `make_server(0)`:
 - `GET /api/auctions/7/minimum-bid;x` -> 200 (an unknown path shape should be 404)
 
 Fixed in a follow-up `fix/` pull request.
+
+## After the fix (branch fix/minimum-bid-endpoint-edges)
+
+Same live probe on the fixed server:
+
+- `HEAD /api/auctions/7/minimum-bid` -> 404, no body
+- `OPTIONS /api/auctions/7/minimum-bid` -> 404 `{"error": "not found"}`
+- `GET /api/auctions/<5000 nines>/minimum-bid` -> 400 `{"error": "invalid auction_id"}`
+- `GET /api/auctions/<5000 zeros>7/minimum-bid` -> 200, auction 7
+- `GET /api/auctions/7/minimum-bid;x` -> 404 `{"error": "not found"}`
+- `GET /api/auctions/7/minimum-bid` and `GET /api/bids?limit=1` -> 200, unchanged
+
+Minor findings: M-038 now asserts status and body; M-029, M-030 and M-043 keep the page
+part and their endpoint parts moved to new rows M-045 to M-047, each with the test that
+asserts it. New rows M-048 to M-052 cover the fixes.
+
+## Second review (PR #13, the fix itself)
+
+`/review-pr 13` on the fix branch: 0 blocker, 1 major, 3 minor, all fixed on the same PR:
+
+- major: M-051's test checked only the status -> now asserts status and body for both paths.
+- minor: M-049 compared two live answers -> now a literal 200 body.
+- minor: matching the raw request target broke absolute-form request lines (404 instead
+  of 200) -> the route uses `urlsplit(...).path`, new test and matrix row M-053.
+- minor: docs/baseline.md said every route rejects `;params` -> now says only minimum-bid does.
+
+## Third review (PR #13 after the second fixes)
+
+`/review-pr 13` again: 0 blocker, 0 major, 5 minor, all fixed on the same PR, and the
+review loop stops here:
+
+- `GET //x/api/auctions/7/minimum-bid` routed to auction 7 (urlsplit read `//x` as a host)
+  -> `request_path()` strips a host only from `http://` or `https://` targets; now 404.
+- HEAD had no `Content-Length` -> sends the same headers as the GET 404.
+- M-047 compared live answers -> literal 200 body; its scenario is S1, not S4.
+- Review-history comments in the tests removed; the history lives in this file.

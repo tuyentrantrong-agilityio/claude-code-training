@@ -9,7 +9,8 @@ browser session instead of only reading code.
     python -m webapp.server        # http://127.0.0.1:8000
     python -m unittest discover -s tests -t . -v
 
-Endpoints: `GET /`, `GET /api/bids?limit=&cursor=`, `POST /api/bids`.
+Endpoints: `GET /`, `GET /api/bids?limit=&cursor=`, `POST /api/bids`,
+`GET /api/auctions/<auction_id>/minimum-bid`. Anything else, any other method included, is 404 JSON.
 Data is in memory and resets on restart. If the page shows old bids, a previous
 server is still holding port 8000; stop it before starting a new one.
 
