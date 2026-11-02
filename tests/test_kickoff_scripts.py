@@ -184,4 +184,4 @@ class ReviewFindingsTest(unittest.TestCase):
 
     def test_text_before_the_title_or_non_ascii(self):
         self.assertIn("first line must be '# Review: <branch>'", check_findings("Here it is:\n" + GOOD_FINDINGS))
-        self.assertIn("plain ASCII only", check_findings(GOOD_FINDINGS.replace("runs after", "runs → after")))
+        self.assertIn("plain ASCII only", check_findings(GOOD_FINDINGS.replace("runs after", "runs " + chr(0x2192) + " after")))
