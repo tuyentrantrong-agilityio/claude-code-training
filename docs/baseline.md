@@ -52,14 +52,19 @@ memory and resets on restart. One shared connection is guarded by a lock.
 | `GET /` | The "My bids" page (`index.html`) |
 | `GET /api/bids?limit=&cursor=` | 200 `{"items": [...], "next_cursor": ...}`; 400 `{"error": ...}` for a bad limit or cursor |
 | `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be at least <minimum next bid>` |
-| anything else | 404 `{"error": "not found"}` |
+| `GET /api/auctions/<auction_id>/minimum-bid` | 200 `{"auction_id", "highest", "step", "minimum_bid"}` (`highest` and `step` null and `minimum_bid` 1 with no active bid); 400 `{"error": "invalid auction_id"}` unless the raw segment is digits with value 1 to 2^63-1 |
+| anything else (other paths, other methods) | 404 `{"error": "not found"}` |
 
-The page has a form (Auction ID, Amount, Place bid), a page size field with
+The page has a form (Auction ID, Amount, minimum bid hint, Place bid), a page size field with
 Reload, a table (ID, Auction, Amount, Status, Standing) with "Load more", a red
 error line, and an outbid banner "You were outbid on auction N". The banner
 compares the standing per auction with the one kept in `localStorage` from the
 previous load, using its own request for the first 100 bids. Placing a new own
-bid on an auction clears its stored standing.
+bid on an auction clears its stored standing. The minimum bid hint
+(`id="min-bid-hint"`) reads "Minimum next bid: N" or "No bids yet: any amount from 1",
+from the lookup sent on each Auction ID input, on load and after each bid POST; it is
+empty for an invalid id or a failed lookup. Both form fields keep their values after a bid.
+(Since T-03, intent/2026-11-02-minimum-raise.)
 
 ## Other code
 
@@ -67,5 +72,5 @@ bid on an auction clears its stored standing.
 
 ## Not in the baseline
 
-Login and several users in the UI, an auction table (title, end time), minimum
-increment, auction end and winner, notifications by email or push, payments.
+Login and several users in the UI, an auction table (title, end time), a step set
+per auction, auction end and winner, notifications by email or push, payments.

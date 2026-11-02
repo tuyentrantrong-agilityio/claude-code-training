@@ -1,6 +1,7 @@
 """Tiny web UI over day-02/auction: python -m webapp.server (run from day-11/)."""
 import json
 import os
+import re
 import sqlite3
 import sys
 import threading
@@ -9,11 +10,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
-from auction.bids import SCHEMA, BidTooLowError, list_my_bids, place_bid  # noqa: E402
+from auction.bids import SCHEMA, BidTooLowError, list_my_bids, minimum_bid, place_bid  # noqa: E402
 
 USER = 42
 MAX_VALUE = 2**63 - 1  # SQLite INTEGER limit
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
+# One raw path segment (not percent-decoded, may be empty) between the fixed parts.
+MINIMUM_BID_PATH = re.compile(r"/api/auctions/([^/]*)/minimum-bid")
 
 
 def to_int(value):
@@ -58,7 +61,19 @@ def make_server(port=8000):
                     return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
+            match = MINIMUM_BID_PATH.fullmatch(url.path)
+            if match:
+                segment = match.group(1)
+                if not (segment.isascii() and segment.isdigit() and 1 <= int(segment) <= MAX_VALUE):
+                    return self._send(400, {"error": "invalid auction_id"})
+                with lock:
+                    return self._send(200, minimum_bid(conn, int(segment)))
             self._send(404, {"error": "not found"})
+
+        def _not_found(self):
+            self._send(404, {"error": "not found"})
+
+        do_PUT = do_DELETE = do_PATCH = _not_found
 
         def do_POST(self):
             if self.path != "/api/bids":

@@ -1,0 +1,8 @@
+GET /api/auctions/7/minimum-bid -> {"auction_id": 7, "highest": 160, "step": 10, "minimum_bid": 170} [200]
+GET /api/auctions/007/minimum-bid -> {"auction_id": 7, "highest": 160, "step": 10, "minimum_bid": 170} [200]
+GET /api/auctions/7/minimum-bid?x=1 -> {"auction_id": 7, "highest": 160, "step": 10, "minimum_bid": 170} [200]
+GET /api/auctions/11/minimum-bid -> {"auction_id": 11, "highest": null, "step": null, "minimum_bid": 1} [200]
+GET /api/auctions/abc/minimum-bid -> {"error": "invalid auction_id"} [400]
+GET /api/auctions/%37/minimum-bid -> {"error": "invalid auction_id"} [400]
+GET /api/auctions/7/minimum-bid/ -> {"error": "not found"} [404]
+POST /api/auctions/7/minimum-bid -> {"error": "not found"} [404]

@@ -14,23 +14,26 @@ import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 RAN = re.compile(r"Ran (\d+) tests? in")
+SKIPPED = re.compile(r"skipped=(\d+)")
 
 
 def parse_result(output, returncode):
-    """Return (tests, status) from unittest output."""
+    """Return (tests, status, skipped) from unittest output."""
     match = RAN.search(output)
     tests = int(match.group(1)) if match else 0
+    skipped = SKIPPED.search(output)
+    skipped = int(skipped.group(1)) if skipped else 0
     if returncode == 0:
-        return tests, "OK"
-    return tests, "FAILED" if match else "ERROR"
+        return tests, "OK", skipped
+    return tests, "FAILED" if match else "ERROR", skipped
 
 
 def run(cmd, cwd):
     start = time.time()
     done = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     output = (done.stdout or "") + (done.stderr or "")
-    tests, status = parse_result(output, done.returncode)
-    return tests, status, time.time() - start, output
+    tests, status, skipped = parse_result(output, done.returncode)
+    return tests, status, skipped, time.time() - start, output
 
 
 def suites(days):
@@ -53,18 +56,20 @@ def main(argv):
         i = argv.index("--save")
         save = argv[i + 1]
         argv = argv[:i] + argv[i + 2:]
-    rows, failures = [], []
+    rows, failures, total, total_skipped = [], [], 0, 0
     for name, cmd, cwd in suites(set(argv)):
-        tests, status, seconds, output = run(cmd, cwd)
-        rows.append(f"{name:<40} {tests:>5} tests  {status:<7} {seconds:5.1f}s")
+        tests, status, skipped, seconds, output = run(cmd, cwd)
+        total, total_skipped = total + tests, total_skipped + skipped
+        row = f"{name:<40} {tests:>5} tests  {status:<7} {seconds:5.1f}s"
+        rows.append(row + (f"  ({skipped} skipped)" if skipped else ""))
         if status != "OK":
             failures.append((name, "\n".join(output.strip().splitlines()[-15:])))
     if not rows:
         print("no test suites found")
         return 1
     report = "\n".join(rows)
-    total = sum(int(r.split()[-4]) for r in rows)
     report += f"\n{'total':<40} {total:>5} tests  " + ("FAILED" if failures else "OK")
+    report += f"  ({total_skipped} skipped)" if total_skipped else ""
     for name, tail in failures:
         report += f"\n\n--- {name} ---\n{tail}"
     print(report)
