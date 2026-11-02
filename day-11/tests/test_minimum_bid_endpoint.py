@@ -78,7 +78,8 @@ class MinimumBidEndpointTest(unittest.TestCase):
 
     def test_lookup_at_auction_id_1_is_valid(self):
         self.seed(1, 100)
-        self.assertEqual(self.lookup(1)[1]["minimum_bid"], 110)
+        # Whole body and status, as M-038 says (review of PR #9).
+        self.assertEqual(self.lookup(1), (200, {"auction_id": 1, "highest": 100, "step": 10, "minimum_bid": 110}))
 
     def test_other_path_shapes_are_404(self):
         for path in ("/api/auctions/7/minimum-bid/", "/api/auctions/7/8/minimum-bid"):
@@ -89,6 +90,37 @@ class MinimumBidEndpointTest(unittest.TestCase):
         for method in ("POST", "PUT", "DELETE", "PATCH"):
             with self.subTest(method=method):
                 self.assertEqual(self.request("/api/auctions/7/minimum-bid", method), (404, {"error": "not found"}))
+
+    # Found by the reviewer agent on PR #9 (evidence/T-03/review.md).
+
+    def test_very_long_segment_is_400_not_a_dropped_connection(self):
+        for segment in ("9" * 5000, "1" + "0" * 19):
+            with self.subTest(digits=len(segment)):
+                self.assertEqual(self.lookup(segment), (400, {"error": "invalid auction_id"}))
+
+    def test_many_leading_zeros_still_mean_the_auction(self):
+        self.seed(7, 1200)
+        self.assertEqual(self.lookup("0" * 5000 + "7"), self.lookup(7))
+
+    def test_every_other_method_is_404_json(self):
+        for method in ("OPTIONS", "TRACE", "PROPFIND"):
+            with self.subTest(method=method):
+                self.assertEqual(self.request("/api/auctions/7/minimum-bid", method), (404, {"error": "not found"}))
+
+    def test_head_is_404_without_body(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        try:
+            conn.request("HEAD", "/api/auctions/7/minimum-bid")
+            resp = conn.getresponse()
+            self.assertEqual((resp.status, resp.getheader("Content-Type")), (404, "application/json"))
+            self.assertEqual(resp.read(), b"")
+        finally:
+            conn.close()
+
+    def test_path_parameters_are_an_unknown_path(self):
+        for path in ("/api/auctions/7/minimum-bid;x", "/api/auctions/7;x/minimum-bid"):
+            with self.subTest(path=path):
+                self.assertEqual(self.request(path)[0], 404 if path.endswith(";x") else 400)
 
 
 if __name__ == "__main__":

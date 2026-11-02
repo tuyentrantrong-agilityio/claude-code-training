@@ -26,6 +26,20 @@ def to_int(value):
     return int(value)
 
 
+def parse_auction_id(segment):
+    """Digits only, leading zeros allowed, value 1 to 2^63-1; else None.
+
+    The length is checked before int(), which refuses strings over 4300 digits.
+    """
+    if not (segment.isascii() and segment.isdigit()):
+        return None
+    digits = segment.lstrip("0")
+    if not digits or len(digits) > len(str(MAX_VALUE)):
+        return None
+    value = int(digits)
+    return value if value <= MAX_VALUE else None
+
+
 def make_server(port=8000):
     # check_same_thread=False: the threaded server uses one connection.
     conn = sqlite3.connect(":memory:", check_same_thread=False)
@@ -61,19 +75,26 @@ def make_server(port=8000):
                     return self._send(200, page)
                 except ValueError as exc:
                     return self._send(400, {"error": str(exc)})
-            match = MINIMUM_BID_PATH.fullmatch(url.path)
+            # The raw path: urlparse would drop ";params" and let "/minimum-bid;x" match.
+            match = MINIMUM_BID_PATH.fullmatch(self.path.partition("?")[0])
             if match:
-                segment = match.group(1)
-                if not (segment.isascii() and segment.isdigit() and 1 <= int(segment) <= MAX_VALUE):
+                auction_id = parse_auction_id(match.group(1))
+                if auction_id is None:
                     return self._send(400, {"error": "invalid auction_id"})
                 with lock:
-                    return self._send(200, minimum_bid(conn, int(segment)))
+                    return self._send(200, minimum_bid(conn, auction_id))
             self._send(404, {"error": "not found"})
 
-        def _not_found(self):
-            self._send(404, {"error": "not found"})
+        def do_HEAD(self):
+            self.send_response(404)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
 
-        do_PUT = do_DELETE = do_PATCH = _not_found
+        def __getattr__(self, name):
+            # Every method without its own do_X answers 404 JSON, not the default 501 page.
+            if name.startswith("do_"):
+                return lambda: self._send(404, {"error": "not found"})
+            raise AttributeError(name)
 
         def do_POST(self):
             if self.path != "/api/bids":

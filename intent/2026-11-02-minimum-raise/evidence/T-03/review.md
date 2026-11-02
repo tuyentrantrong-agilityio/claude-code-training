@@ -28,3 +28,18 @@ against a live `make_server(0)`:
 - `GET /api/auctions/7/minimum-bid;x` -> 200 (an unknown path shape should be 404)
 
 Fixed in a follow-up `fix/` pull request.
+
+## After the fix (branch fix/minimum-bid-endpoint-edges)
+
+Same live probe on the fixed server:
+
+- `HEAD /api/auctions/7/minimum-bid` -> 404, no body
+- `OPTIONS /api/auctions/7/minimum-bid` -> 404 `{"error": "not found"}`
+- `GET /api/auctions/<5000 nines>/minimum-bid` -> 400 `{"error": "invalid auction_id"}`
+- `GET /api/auctions/<5000 zeros>7/minimum-bid` -> 200, auction 7
+- `GET /api/auctions/7/minimum-bid;x` -> 404 `{"error": "not found"}`
+- `GET /api/auctions/7/minimum-bid` and `GET /api/bids?limit=1` -> 200, unchanged
+
+Minor findings: M-038 now asserts status and body; M-029, M-030 and M-043 keep the page
+part and their endpoint parts moved to new rows M-045 to M-047, each with the test that
+asserts it. New rows M-048 to M-052 cover the fixes.
