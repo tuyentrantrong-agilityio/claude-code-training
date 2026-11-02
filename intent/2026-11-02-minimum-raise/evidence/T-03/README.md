@@ -4,6 +4,39 @@ Captured with the `/evidence` steps: demo app `python .claude/skills/evidence/se
 (auction 7 highest 150 by user 5, auction 8 highest 300, auction 11 only a cancelled bid),
 localStorage cleared, page driven in Chrome through the Claude in Chrome tools.
 
+Report page: https://claude.ai/artifact/Lizh2Wf8RGbE7FZtBAr6aP (opens only for people it
+is shared with). Everything on it is also in this folder.
+
+## Screenshots
+
+1. Type 8: "Minimum next bid: 310".
+
+   ![Hint for auction 8](01-hint-auction-8.png)
+
+2. Type 11 (only a cancelled bid): "No bids yet: any amount from 1".
+
+   ![Hint for an auction without active bids](02-hint-no-active-bid.png)
+
+3. Type " 007 ": looked up as auction 7, "Minimum next bid: 160".
+
+   ![Hint for 007](03-hint-trimmed-007.png)
+
+4. Type abc: hint empty.
+
+   ![Empty hint for an invalid id](04-hint-empty-invalid-id.png)
+
+5. Bid 159 on auction 7: "bid must be at least 160", hint refreshed, fields kept.
+
+   ![Rejected bid](05-rejected-bid-hint-refreshed.png)
+
+6. Bid 160 on auction 7: Winning, hint refreshed to 170.
+
+   ![Accepted bid, hint 170](06-accepted-bid-hint-170.png)
+
+7. Bid 1000 on auction 8: hint 1050, the step is 50 from 1000.
+
+   ![Accepted bid of 1000, hint 1050](07-accepted-1000-step-50.png)
+
 ## Browser run
 
 | File | Step | Shows | Matrix |

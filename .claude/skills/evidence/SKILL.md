@@ -36,8 +36,11 @@ state, never relabel the screenshot. Close the tab you opened when done.
 - Copy the screenshots into `<folder>/evidence/` with names like
   `01-first-load-no-banner.jpg`, and write `<folder>/evidence/README.md` with a
   table of file and what it shows, plus the limits of the run.
+- In that README, show every screenshot inline (`![what it shows](01-....png)`) so
+  GitHub renders it: the folder must stand on its own when a link does not open.
 - Publish an artifact page with the screenshots (as data URIs), what each step
-  did, the tools used, the test output and the limits.
+  did, the tools used, the test output and the limits. Write its link at the top
+  of the README and in the kickoff's `evidence/README.md` index, if there is one.
 - Stop the background server.
 
 ## 4. Report
