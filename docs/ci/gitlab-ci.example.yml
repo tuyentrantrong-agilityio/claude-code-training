@@ -1,0 +1,16 @@
+# Example only: CI/CD is disabled on this GitLab instance (no runner), so this file is not
+# named .gitlab-ci.yml. Copy it to the repo root if a runner becomes available.
+image: python:3.12-slim
+
+stages:
+  - test
+
+tests:
+  stage: test
+  script:
+    - python .claude/skills/run-tests/run_tests.py
+    # Lint every committed kickoff folder, so a ticket cannot be merged in a broken format.
+    - for folder in intent/20*/; do if [ -d "$folder" ]; then python scripts/lint_tickets.py "$folder" || exit 1; fi; done
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "practice" || $CI_COMMIT_BRANCH == "main"

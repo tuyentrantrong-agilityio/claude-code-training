@@ -28,3 +28,20 @@ or spec relies on it.
 - **Merge request (MR)**: the only way code reaches `practice`; `main` only receives `practice` for a release.
 - **Release**: `practice` merged into `main` and tagged `vX.Y.Z`.
 - **Evidence**: proof a result is real (test output, screenshots, artifact), produced by Claude while running the tools, never by hand.
+
+## Kickoff
+
+- **Kickoff**: one run of the planning pipeline for one feature, in one `intent/` folder.
+- **Lead / client**: the agent playing the person who wants the feature. Briefs vaguely on purpose.
+- **Brief**: the client's first, deliberately vague description of the feature (`brief.md`).
+- **Client truth**: the client's private list of what they really want. Hidden until the reveal.
+- **BA decision**: an answer the BA chose when the client said "you decide", with a one-line reason.
+- **Ticket pack**: all tickets of one feature, plus `spec.md`.
+- **Dev round**: fresh Dev agents read each ticket cold and list the questions they would need answered.
+- **Iteration**: one Dev round over a ticket. At most 3 per ticket.
+- **Blocking question** `[B]`: a dev would have to guess, and could guess wrong.
+- **Non-blocking question** `[N]`: nice to know; a dev could build correctly without it.
+- **Ready ticket**: a ticket whose latest iteration has no open blocking question.
+- **Gate**: a stop where the user approves (`approve gate N`) or sends questions back. Gates 1, 2 and 3.
+- **Reveal**: the last stage: the client truth is shown and BA recall is scored.
+- **BA recall**: client requirements the ticket pack covered, out of all of them.

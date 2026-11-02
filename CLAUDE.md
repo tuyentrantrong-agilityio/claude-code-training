@@ -9,13 +9,18 @@ for Claude Code training. Python stdlib only, no dependencies.
 - One day's tests: `cd day-NN && python -m unittest discover -s tests -t . -v`
 - Web app: `cd day-11 && python -m webapp.server` (http://127.0.0.1:8000)
 - Demo data app on another port: `python .claude/skills/evidence/seed_server.py 8010`
+- Feature kickoff: `/kickoff`; lint `python scripts/lint_tickets.py intent/<folder>`,
+  score `python scripts/score_kickoff.py intent/<folder>`
 
 ## Layout
 
 - `docs/baseline.md`: what the app does today. Features are specified on top of it.
 - `CONTEXT.md`: glossary. Use its terms; add a term before relying on it.
 - `day-02/auction`: bids store (core). `day-11/webapp`: web UI and JSON API.
-- `day-12`: planning documents and tickets for the bid standing feature.
+- `day-12`: planning documents and tickets for the bid standing feature (before the kickoff harness).
+- `intent/<date>-<slug>/`: one folder per feature kickoff; `intent/CURRENT` names the active one.
+- `.kickoff-private/`: the client agent's hidden notes, gitignored until the reveal.
+- `scripts/`: ticket linter and kickoff scorecard. Tests for them and the kickoff hooks in `tests/`.
 - `.claude/`: hooks, skills, rules and commands (map in `.claude/README.md`).
 - Format rules load on demand: tickets in `.claude/rules/tickets.md`, tests in `.claude/rules/tests.md`.
 
@@ -47,3 +52,7 @@ for Claude Code training. Python stdlib only, no dependencies.
 - Never force push, skip hooks, or rewrite history that is already pushed.
 - Never commit secrets, `.env` files, or generated files such as `__pycache__`.
 - Never commit or push unless asked to.
+- Never write, edit or delete anything under `intent/*/approvals/`; only the user's
+  `approve gate N` creates those files. "ok" or "looks good" is not an approval.
+- Never read or quote the client truth before the kickoff's reveal stage, and never
+  create GitLab issues for a kickoff before Gate 3 is approved.
