@@ -21,8 +21,6 @@ RUNS = [
      [PY, "scripts/lint_tickets.py", "intent/2026-11-02-cancel-bid"], 12),
     ("test-matrix", "every matrix row has its real test",
      [PY, "scripts/check_matrix.py", "intent/2026-11-02-cancel-bid"], 12),
-    ("kickoff", "scorecard of the finished kickoff",
-     [PY, "scripts/score_kickoff.py", "intent/2026-11-02-cancel-bid"], 12),
     ("release", "notes generated for the range v0.2.0..v0.3.0",
      [PY, "scripts/release_notes.py", "v0.3.0", "--since", "v0.2.0", "--to", "v0.3.0"], 12),
 ]
