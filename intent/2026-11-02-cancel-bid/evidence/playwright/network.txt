@@ -1,0 +1,13 @@
+2. [GET] http://127.0.0.1:8010/api/bids?limit=2 => [200] OK
+3. [GET] http://127.0.0.1:8010/api/bids?limit=100 => [200] OK
+4. [GET] http://127.0.0.1:8010/api/auctions/7/minimum-bid => [200] OK
+5. [POST] http://127.0.0.1:8010/api/bids => [409] Conflict
+6. [GET] http://127.0.0.1:8010/api/auctions/7/minimum-bid => [200] OK
+7. [POST] http://127.0.0.1:8010/api/bids => [201] Created
+8. [GET] http://127.0.0.1:8010/api/auctions/7/minimum-bid => [200] OK
+9. [GET] http://127.0.0.1:8010/api/bids?limit=2 => [200] OK
+10. [GET] http://127.0.0.1:8010/api/bids?limit=100 => [200] OK
+11. [GET] http://127.0.0.1:8010/api/bids?limit=2 => [200] OK
+12. [GET] http://127.0.0.1:8010/api/bids?limit=100 => [200] OK
+
+Note: 1 static request not shown, run with "static" option to see it.

@@ -7,9 +7,9 @@ command. Evidence is saved in the repo, next to the flow it proves.
 |---|---|---|---|
 | Claude in Chrome | Browser extension (not in `.mcp.json`) | Drive the web app and take screenshots | [day-15](../day-15/evidence/README.md), [minimum raise](../intent/2026-11-02-minimum-raise/evidence/README.md) |
 | GitHub | `.mcp.json` (needs `GITHUB_PERSONAL_ACCESS_TOKEN` in the environment) | Create the kickoff issues at the `promote` stage; read issues, pull requests and CI | Run on 2026-11-03: reads and two writes, see Flow 2 |
-| Playwright | `.mcp.json` (`npx @playwright/mcp`, pinned to 0.0.84) | Kept for later: a clean, repeatable browser for tests that run in CI | None yet: configured, never run end to end |
+| Playwright | `.mcp.json` (`npx @playwright/mcp`, pinned to 0.0.84) | A clean, repeatable browser for the web app and later for tests that run in CI | Run on 2026-11-03, see Flow 3 and [the evidence](../intent/2026-11-02-cancel-bid/evidence/playwright/README.md) |
 
-Do not read the last two rows as done: only Claude in Chrome has a recorded run.
+Claude in Chrome and Playwright have a recorded run each; GitHub has reads and two writes, but creating an issue through it was not recorded.
 
 ## Flow 1: Claude in Chrome (done, recorded)
 
@@ -55,13 +55,20 @@ merged (PRs #7 to #9).
 Not covered: creating an issue through the MCP. The failing case (a bad token) is the error
 above, and the denial in step 5 is the permission check working.
 
-## Flow 3: Playwright MCP (configured, not yet recorded)
+## Flow 3: Playwright MCP (recorded)
 
-Planned run, to be done with the Playwright tools loaded: open the web app on port 8010,
-post a bid below the minimum (expect the 409 error line), post a valid bid, read the list
-back, and save the snapshots under `intent/<folder>/evidence/`. Until that run exists this
-row stays "none yet". Claude in Chrome already covers the evidence runs; Playwright is kept
-for what Chrome cannot do: a clean browser with no sign-in, repeatable runs and CI.
+Recorded run on 2026-11-03, after the server was enabled in the local settings and the
+session restarted. Claude, in order: opened the web app on port 8010 (`browser_navigate`),
+posted a bid below the minimum and got the 409 error line (`browser_fill_form`,
+`browser_click`), posted a valid bid and got 201, read the list back (`Reload`,
+`browser_snapshot`), saved the API calls (`browser_network_requests`) and closed the browser.
+Screenshots, the snapshot and the call log are in
+[intent/2026-11-02-cancel-bid/evidence/playwright/](../intent/2026-11-02-cancel-bid/evidence/playwright/README.md).
+
+Why both browser MCPs: Claude in Chrome uses the user's real Chrome and sign-ins, so it is the
+tool for the evidence runs of a ticket. Playwright starts a clean browser with no sign-in, so it
+gives repeatable runs and can run in CI later. The first run needed the server to be enabled: a
+local setting had it disabled (`disabledMcpjsonServers`).
 
 ## Rules
 

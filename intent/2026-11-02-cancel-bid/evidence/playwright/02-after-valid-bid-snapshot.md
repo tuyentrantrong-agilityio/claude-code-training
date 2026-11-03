@@ -1,0 +1,44 @@
+- generic [ref=e1]:
+  - heading "My bids" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - text: Auction ID
+      - textbox "Auction ID" [ref=e5]: "7"
+    - generic [ref=e6]:
+      - text: Amount
+      - textbox "Amount" [ref=e7]: "160"
+    - paragraph [ref=e8]: "Minimum next bid: 170"
+    - button "Place bid" [ref=e9]
+  - alert [ref=e10]
+  - status
+  - generic [ref=e11]:
+    - text: Page size
+    - textbox "Page size" [ref=e12]: "2"
+  - button "Reload" [active] [ref=e13]
+  - paragraph
+  - table [ref=e14]:
+    - rowgroup [ref=e15]:
+      - row [ref=e16]:
+        - columnheader "ID" [ref=e17]
+        - columnheader "Auction" [ref=e18]
+        - columnheader "Amount" [ref=e19]
+        - columnheader "Status" [ref=e20]
+        - columnheader "Standing" [ref=e21]
+        - columnheader "Cancel" [ref=e22]
+    - rowgroup [ref=e23]:
+      - row [ref=e55]:
+        - cell "8" [ref=e56]
+        - cell "7" [ref=e57]
+        - cell "160" [ref=e58]
+        - cell "active" [ref=e59]
+        - cell "Winning" [ref=e60]
+        - cell [ref=e61]:
+          - button "Cancel bid" [ref=e62]
+      - row [ref=e63]:
+        - cell "6" [ref=e64]
+        - cell "11" [ref=e65]
+        - cell "60" [ref=e66]
+        - cell "cancelled" [ref=e67]
+        - cell "-" [ref=e68]
+        - cell [ref=e69]
+  - button "Load more" [ref=e39]
