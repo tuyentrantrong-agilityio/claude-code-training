@@ -7,8 +7,10 @@ real API exposes.
 import base64
 import json
 import sqlite3
+import time
 
 MAX_LIMIT = 100
+CANCEL_WINDOW_MS = 5 * 60 * 1000  # a bid can be cancelled this long after it was placed
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS bids (
@@ -58,6 +60,11 @@ class BidNotActiveError(ValueError):
         super().__init__("bid is not active")
 
 
+class CancelTooLateError(ValueError):
+    def __init__(self):
+        super().__init__("too late to cancel: bids can only be cancelled within 5 minutes")
+
+
 def highest_bid(conn, auction_id):
     """Top active bid of an auction (highest amount, then earliest), or None."""
     return conn.execute(
@@ -102,15 +109,19 @@ def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
 def cancel_bid(conn, bid_id, user_id, now_ms=None):
     """Cancel one of the user's own active bids and return its auction_id.
 
-    Raises BidNotFoundError for an unknown bid or another user's bid, and
-    BidNotActiveError when the bid is not active. The status change is one
-    statement, so two cancels of the same bid cannot both succeed.
-    now_ms is for the 5 minute window (T-02) and is not used yet.
+    Raises BidNotFoundError for an unknown bid or another user's bid, BidNotActiveError
+    when the bid is not active, and CancelTooLateError when more than CANCEL_WINDOW_MS
+    passed since it was placed (exactly the window is still in time, and so is a
+    created_at later than now_ms). The checks run in that order. The status change is
+    one statement, so two cancels of the same bid cannot both succeed.
+    now_ms defaults to the current epoch milliseconds, the clock place_bid uses.
     """
+    if now_ms is None:
+        now_ms = int(time.time() * 1000)
     cur = conn.execute(
         "UPDATE bids SET status = 'cancelled' "
-        "WHERE id = ? AND user_id = ? AND status = 'active'",
-        (bid_id, user_id),
+        "WHERE id = ? AND user_id = ? AND status = 'active' AND created_at >= ?",
+        (bid_id, user_id, now_ms - CANCEL_WINDOW_MS),
     )
     conn.commit()
     row = conn.execute(
@@ -120,7 +131,9 @@ def cancel_bid(conn, bid_id, user_id, now_ms=None):
     if row is None:
         raise BidNotFoundError()
     if cur.rowcount == 0:
-        raise BidNotActiveError()
+        if row["status"] != "active":
+            raise BidNotActiveError()
+        raise CancelTooLateError()
     return row["auction_id"]
 
 

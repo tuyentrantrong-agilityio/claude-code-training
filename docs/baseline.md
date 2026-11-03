@@ -53,7 +53,7 @@ memory and resets on restart. One shared connection is guarded by a lock.
 | `GET /api/bids?limit=&cursor=` | 200 `{"items": [...], "next_cursor": ...}`; 400 `{"error": ...}` for a bad limit or cursor |
 | `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be at least <minimum next bid>` |
 | `GET /api/auctions/<auction_id>/minimum-bid` | 200 `{"auction_id", "highest", "step", "minimum_bid"}` (`highest` and `step` null and `minimum_bid` 1 with no active bid); 400 `{"error": "invalid auction_id"}` unless the raw segment is digits with value 1 to 2^63-1 |
-| `POST /api/bids/<bid_id>/cancel` | 200 `{"id", "auction_id", "status": "cancelled"}` for the user's own active bid; 400 `{"error": "invalid bid_id"}` unless the raw segment is digits with value 1 to 2^63-1 (leading zeros allowed); 404 `{"error": "bid not found"}` for an unknown bid or another user's bid; 409 `{"error": "bid is not active"}`. Body and query string are ignored. (Since T-01, intent/2026-11-02-cancel-bid.) |
+| `POST /api/bids/<bid_id>/cancel` | 200 `{"id", "auction_id", "status": "cancelled"}` for the user's own active bid; 400 `{"error": "invalid bid_id"}` unless the raw segment is digits with value 1 to 2^63-1 (leading zeros allowed); 404 `{"error": "bid not found"}` for an unknown bid or another user's bid; 409 `{"error": "bid is not active"}`; 409 `{"error": "too late to cancel: bids can only be cancelled within 5 minutes"}` when more than 300000 ms (server clock, epoch milliseconds) passed since the bid was placed; exactly 300000 ms is still in time. Checks run in the order not found, not active, too late. Body and query string are ignored. (Since T-01 and T-02, intent/2026-11-02-cancel-bid.) |
 | anything else (other paths, `minimum-bid;params`, a cancel path with a trailing slash, `;params` or an extra segment, any other method; HEAD gets the 404 headers only) | 404 `{"error": "not found"}` |
 
 `GET /` and `GET /api/bids` ignore `;params` in the path (they read it through `urlparse`);
@@ -65,7 +65,7 @@ Amount, Status, Standing, Cancel) with "Load more", a red error line, and an out
 banner "You were outbid on auction N". Each active row has a `Cancel bid` button: after
 the browser confirm dialog it sends the cancel, the button stays disabled until the answer
 arrives, a 200 sets the notice "Bid N on auction M cancelled." and reloads My bids, and a
-404 or 409 reloads first and then shows the error text in the red line (T-01). The banner
+404 or 409 reloads first and then shows the error text in the red line (T-01); the button shows on every active row whatever its age, and the server decides (T-02). The banner
 compares the standing per auction with the one kept in `localStorage` from the
 previous load, using its own request for the first 100 bids. Placing a new own
 bid on an auction clears its stored standing. The minimum bid hint
