@@ -68,7 +68,7 @@ Amount, Status, Standing, Cancel) with "Load more", a red error line, and an out
 banner "You were outbid on auction N". Each active row has a `Cancel bid` button: after
 the browser confirm dialog it sends the cancel, the button stays disabled until the answer
 arrives, a 200 sets the notice "Bid N on auction M cancelled." and reloads My bids, and a
-404 or 409 reloads first and then shows the error text in the red line (T-01); the button shows on every active row whatever its age, and the server decides (T-02). The banner
+404 or 409 reloads first and then shows the error text in the red line (T-01); the button shows on every active row whatever its age, and the server decides (T-02). After a 200 the page also forgets the stored standing of that auction (so a cancel never shows the outbid banner), and after a 200, 404 or 409 it reloads, sets the error line, and then requests the minimum bid hint again for the Auction ID field value at that moment; a failed reload does not stop those steps. A network failure, another status or a body that is not JSON shows "could not cancel bid N", enables the button again and changes nothing else (T-04). The banner
 compares the standing per auction with the one kept in `localStorage` from the
 previous load, using its own request for the first 100 bids. Placing a new own
 bid on an auction clears its stored standing. The minimum bid hint
