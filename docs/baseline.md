@@ -38,6 +38,9 @@ There is no auction table: an auction exists as soon as it has a bid.
   `bid must be at least <minimum next bid>`. (Since T-01, intent/2026-11-02-minimum-raise.)
 - **Standing** of a bid in a listing: `winning` if it is the highest bid of its
   auction, `outbid` if it is active but not the highest, `null` if it is not active.
+  Nothing is stored: after a cancel the highest bid, the standings and the minimum next bid are
+  computed again from the remaining active bids on the next request, so the auction carries on as if
+  the cancelled bid had never been placed (T-03).
 - **My bids** (`list_my_bids`): the user's bids, newest first by (`created_at`, `id`).
   `limit` must be 1 to 100. `next_cursor` is set when a full page was returned and
   is an opaque base64 string; a malformed cursor raises `ValueError("invalid cursor")`.
