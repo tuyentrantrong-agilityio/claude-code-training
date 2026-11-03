@@ -34,8 +34,8 @@ tab closed afterwards. No report page was published; this folder is the record.
 |---|---|---|---|
 | `01-cancel-column.jpg` | Page size 10, Reload | `Cancel` column, button only on active rows | M-004 |
 | `02-cancel-accepted.jpg` | Click `Cancel bid` on bid 3, accept | Notice, row `cancelled`, standing `-`, no button | M-003, M-001 |
-| `03-already-cancelled-error.jpg` | Click `Cancel bid` on bid 4 after a cancel elsewhere | Red `bid is not active` after the reload | M-008 (page half) |
-| `tests.txt` | `run_tests.py --save` | 235 tests OK, including `test_cancel.py`, `test_cancel_api.py`, `test_cancel_page.py` | M-001 to M-017 |
+| `03-already-cancelled-error.jpg` | Click `Cancel bid` on bid 4 after a cancel elsewhere | Red `bid is not active` after the reload | M-008, M-056 |
+| `tests.txt` | `run_tests.py --save` | 237 tests OK, including `test_cancel.py`, `test_cancel_api.py`, `test_cancel_page.py` | M-001 to M-017, M-056, M-057 |
 
 ## Limits
 

@@ -59,6 +59,8 @@ Derived from tickets T-01 to T-04 and the spec. Times are epoch ms; `NOW` is the
 | M-053 | T-04 | S6 | negative | Cancel POST answers another status (e.g. 500) | Click `Cancel bid`, confirm | Red error line `could not cancel bid 31`; notice empty; nothing else | `day-11/tests/test_cancel_page.py::test_other_status_shows_could_not_cancel` |
 | M-054 | T-04 | S2 | edge | A cancel notice is showing from a previous cancel | Confirm a second cancel, or send a bid POST | Notice and red error line emptied when the second cancel is confirmed; notice emptied when a bid POST is sent | `day-11/tests/test_cancel_page.py::test_notice_cleared_by_next_cancel_or_bid_post` |
 | M-055 | T-04 | S1 | edge | A cancelled bid, `GET /api/bids` | Concurrent view by another user | Another user's next `GET /api/auctions/<id>/minimum-bid` already shows the recalculated price | `day-11/tests/test_cancel_api.py::test_other_user_sees_new_price_on_next_request` |
+| M-056 | T-01 | S5 | negative | Page shows bid 31 active; bid 31 was cancelled in another tab, so the list now returns it as `cancelled` | Click `Cancel bid`, confirm; the POST answers 409 `bid is not active` | List reloaded (2 loads); red error line `bid is not active` set after the reload; cancel notice empty; row 31 `cancelled`, standing `-`, no button | `day-11/tests/test_cancel_page.py::test_not_active_answer_reloads_then_shows_error` |
+| M-057 | T-01 | S5 | negative | Page shows bid 31 active; the POST answers 404 `bid not found` | Click `Cancel bid`, confirm | List reloaded (2 loads); red error line `bid not found` set after the reload; cancel notice empty; row 31 as the list returns it | `day-11/tests/test_cancel_page.py::test_not_found_answer_reloads_then_shows_error` |
 
 ## Questions raised
 

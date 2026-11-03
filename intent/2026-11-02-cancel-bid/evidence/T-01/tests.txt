@@ -1,8 +1,8 @@
-day-02                                      28 tests  OK        1.0s
+day-02                                      28 tests  OK        0.6s
 day-04                                      11 tests  OK        0.1s
-day-11                                      89 tests  OK       33.6s
-tests (kickoff harness)                     61 tests  OK        4.7s
+day-11                                      91 tests  OK       34.0s
+tests (kickoff harness)                     61 tests  OK        4.8s
 .claude/hooks/test_block_forbidden.py       11 tests  OK        0.6s
 .claude/hooks/test_hooks_extra.py           25 tests  OK        0.3s
 .claude/skills/review-checklist/test_check_branch.py    10 tests  OK        0.1s
-total                                      235 tests  OK
+total                                      237 tests  OK

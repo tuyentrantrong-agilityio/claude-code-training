@@ -61,6 +61,23 @@ class CancelPageTest(unittest.TestCase):
         )
         self.assertEqual(got["buttons"], ["Cancel bid", None, "Cancel bid"])
 
+    def test_not_active_answer_reloads_then_shows_error(self):
+        got = self.scenario("notActive")
+        self.assertEqual(got["posts"], ["/api/bids/31/cancel"])
+        self.assertEqual(got["loads"], 2)
+        self.assertEqual(got["notice"], "")
+        self.assertEqual(got["error"], "bid is not active")
+        self.assertEqual(got["rows"], [[31, 7, 500, "cancelled", "-", ""]])
+        self.assertEqual(got["hasButton"], [False])
+
+    def test_not_found_answer_reloads_then_shows_error(self):
+        got = self.scenario("notFound")
+        self.assertEqual(got["posts"], ["/api/bids/31/cancel"])
+        self.assertEqual(got["loads"], 2)
+        self.assertEqual(got["notice"], "")
+        self.assertEqual(got["error"], "bid not found")
+        self.assertEqual(got["rows"], [[31, 7, 500, "active", "Winning", ""]])
+
     def test_confirm_dismissed_sends_nothing(self):
         got = self.scenario("dismissed")
         self.assertEqual(got["confirms"], [DIALOG])

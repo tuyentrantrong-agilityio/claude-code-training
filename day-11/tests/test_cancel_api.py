@@ -69,9 +69,11 @@ class CancelApiTest(unittest.TestCase):
         self.assertEqual(self.stored(), before)
 
     def test_invalid_bid_id_is_400(self):
+        self.seed(USER, 7, 500)
         for segment in ("abc", "0", "9223372036854775808"):
             with self.subTest(segment=segment):
                 self.assertEqual(self.cancel(segment), INVALID)
+        self.assertEqual(self.stored()[0]["status"], "active")
 
     def test_malformed_bid_id_variants_are_400(self):
         self.seed(USER, 7, 500)

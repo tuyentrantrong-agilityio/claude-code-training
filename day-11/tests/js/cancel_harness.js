@@ -23,7 +23,8 @@ function node(tag) {
 
 // `items` is what GET /api/bids returns. `cancel` answers POST /api/bids/<id>/cancel:
 // [status, body], or "defer" to leave the request pending until page.answer().
-function makePage({ items, cancel = null, confirmAnswer = true }) {
+// `after`, when set, replaces `items` once a non-200 answer was given (a change made elsewhere).
+function makePage({ items, cancel = null, confirmAnswer = true, after = null }) {
   const state = { items, cancel };
   const els = {};
   const el = (id) => {
@@ -38,6 +39,7 @@ function makePage({ items, cancel = null, confirmAnswer = true }) {
   const pending = [];
   const apply = (status, body) => {
     if (status === 200) state.items = state.items.map((b) => (b.id === body.id ? { ...b, status: "cancelled", standing: null } : b));
+    else if (after) state.items = after;
     return response(status, body);
   };
   const fetch = (url, opts = {}) => {
@@ -103,6 +105,26 @@ const scenarios = {
     return {
       confirms: p.confirms, posts: p.posts(), loads: p.loads(), disabled: button.disabled,
       notice: p.el("cancel-notice").textContent, rows: p.rows(), hasButton: p.buttons().map((b) => b !== null),
+    };
+  },
+  async notActive() {
+    const cancelled = { ...ACTIVE, status: "cancelled", standing: null };
+    const p = makePage({ items: [ACTIVE], cancel: [409, { error: "bid is not active" }], after: [cancelled] });
+    await settle();
+    const button = p.buttons()[0];
+    await p.click(button);
+    return {
+      posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
+      error: p.el("error").textContent, rows: p.rows(), hasButton: p.buttons().map((b) => b !== null),
+    };
+  },
+  async notFound() {
+    const p = makePage({ items: [ACTIVE], cancel: [404, { error: "bid not found" }] });
+    await settle();
+    await p.click(p.buttons()[0]);
+    return {
+      posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
+      error: p.el("error").textContent, rows: p.rows(),
     };
   },
   async buttonsPerRow() {
