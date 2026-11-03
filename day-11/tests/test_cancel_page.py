@@ -70,6 +70,8 @@ class CancelPageTest(unittest.TestCase):
         self.assertEqual(got["rows"], [[31, 7, 500, "cancelled", "-", ""]])
         self.assertEqual(got["hasButton"], [False])
         self.assertEqual(got["hint"], "Minimum next bid: 110")
+        self.assertEqual(got["lookups"], ["/api/auctions/7/minimum-bid"])
+        self.assertEqual(got["stored"], {"7": "winning"})
 
     def test_not_found_answer_reloads_then_shows_error(self):
         got = self.scenario("notFound")
@@ -79,6 +81,8 @@ class CancelPageTest(unittest.TestCase):
         self.assertEqual(got["error"], "bid not found")
         self.assertEqual(got["rows"], [[31, 7, 500, "active", "Winning", ""]])
         self.assertEqual(got["hint"], "Minimum next bid: 510")
+        self.assertEqual(got["lookups"], ["/api/auctions/7/minimum-bid"])
+        self.assertEqual(got["stored"], {"7": "winning"})
 
     def test_network_failure_shows_could_not_cancel(self):
         got = self.scenario("networkFailure")
@@ -96,7 +100,8 @@ class CancelPageTest(unittest.TestCase):
                 self.assertEqual(
                     got,
                     {"posts": ["/api/bids/31/cancel"], "loads": 1, "disabled": False, "notice": "",
-                     "error": "could not cancel bid 31", "rows": [[31, 7, 500, "active", "Winning", ""]]},
+                     "error": "could not cancel bid 31", "rows": [[31, 7, 500, "active", "Winning", ""]],
+                     "lookups": [], "stored": {"7": "winning"}},
                 )
 
     def test_notice_cleared_by_next_cancel_or_bid_post(self):
@@ -152,13 +157,20 @@ class CancelPageTest(unittest.TestCase):
              "afterBrowserReload": ""},
         )
 
+    def test_cancel_forgets_the_stored_standing_of_the_auction(self):
+        self.assertEqual(
+            self.scenario("standingForgotten"),
+            {"before": {"20": "winning", "21": "winning"}, "after": {"21": "winning"}, "banner": ""},
+        )
+
     def test_real_outbid_still_shows_banner_after_cancel(self):
         self.assertEqual(self.scenario("realOutbid"), {"banner": "You were outbid on auction 21"})
 
     def test_reload_failure_still_shows_error_and_refreshes_hint(self):
         self.assertEqual(
             self.scenario("reloadFails"),
-            {"notice": "", "error": "bid is not active", "hint": "Minimum next bid: 110", "banner": ""},
+            {"notice": "", "error": "bid is not active", "hint": "Minimum next bid: 110", "banner": "",
+             "stored": {"7": "winning"}},
         )
 
     def test_confirm_dismissed_sends_nothing(self):

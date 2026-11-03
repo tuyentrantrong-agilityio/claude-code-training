@@ -42,7 +42,7 @@ closed afterwards. No report page was published; this folder is the record.
 | `01-winning-bid-before-cancel.jpg` | Place bid 200 on auction 7 | Winning bid, hint 210 | (set-up) |
 | `02-after-cancel-no-banner-hint-160.jpg` | Click `Cancel bid` on bid 8 | No banner, hint refreshed to 160, form values kept | M-045, M-048 |
 | `03-after-browser-reload-no-banner.jpg` | Load the page again | No banner after the browser reload | M-048 |
-| `tests.txt` | `run_tests.py --save` | All tests OK, including the T-04 page tests in `test_cancel_page.py` | M-044 to M-055, M-063 |
+| `tests.txt` | `run_tests.py --save` | All tests OK, including the T-04 page tests in `test_cancel_page.py` | M-044 to M-055, M-063, M-064 |
 
 ## Limits
 

@@ -116,9 +116,12 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const ACTIVE = { id: 31, auction_id: 7, amount: 500, status: "active", standing: "winning" };
 const TOO_LATE = "too late to cancel: bids can only be cancelled within 5 minutes";
 const bid = (id, auction_id, amount, status = "active", standing = null) => ({ id, auction_id, amount, status, standing });
+const stored = (p) => (p.storage.standing ? JSON.parse(p.storage.standing) : null);
 const states = (p) => ({
   notice: p.el("cancel-notice").textContent, error: p.el("error").textContent, hint: p.hint(), banner: p.banner(),
+  stored: stored(p),
 });
+const WINNING_7 = { standing: JSON.stringify({ 7: "winning" }) };
 
 const scenarios = {
   async accepted() {
@@ -150,23 +153,26 @@ const scenarios = {
     const cancelled = { ...ACTIVE, status: "cancelled", standing: null };
     const p = makePage({
       items: [ACTIVE], others: [bid(30, 7, 100, "active", "winning")],
-      cancel: [409, { error: "bid is not active" }], after: [cancelled], auctionId: "7",
+      cancel: [409, { error: "bid is not active" }], after: [cancelled], auctionId: "7", storage: { ...WINNING_7 },
     });
     await settle();
     const button = p.buttons()[0];
+    const from = p.requests.length;
     await p.click(button);
     return {
       posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
       error: p.el("error").textContent, rows: p.rows(), hasButton: p.buttons().map((b) => b !== null), hint: p.hint(),
+      lookups: p.lookups(from), stored: stored(p),
     };
   },
   async notFound() {
-    const p = makePage({ items: [ACTIVE], cancel: [404, { error: "bid not found" }], auctionId: "7" });
+    const p = makePage({ items: [ACTIVE], cancel: [404, { error: "bid not found" }], auctionId: "7", storage: { ...WINNING_7 } });
     await settle();
+    const from = p.requests.length;
     await p.click(p.buttons()[0]);
     return {
       posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
-      error: p.el("error").textContent, rows: p.rows(), hint: p.hint(),
+      error: p.el("error").textContent, rows: p.rows(), hint: p.hint(), lookups: p.lookups(from), stored: stored(p),
     };
   },
   async networkFailure() {
@@ -185,13 +191,14 @@ const scenarios = {
     const out = {};
     const cases = { "500": [500, { error: "boom" }], "400": [400, { error: "bad" }], "notJson": [200, "<html>oops</html>"] };
     for (const [name, answer] of Object.entries(cases)) {
-      const p = makePage({ items: [ACTIVE], cancel: answer });
+      const p = makePage({ items: [ACTIVE], cancel: answer, auctionId: "7", storage: { ...WINNING_7 } });
       await settle();
       const button = p.buttons()[0];
+      const from = p.requests.length;
       await p.click(button);
       out[name] = {
         posts: p.posts(), loads: p.loads(), disabled: button.disabled, notice: p.el("cancel-notice").textContent,
-        error: p.el("error").textContent, rows: p.rows(),
+        error: p.el("error").textContent, rows: p.rows(), lookups: p.lookups(from), stored: stored(p),
       };
     }
     return out;
@@ -240,11 +247,24 @@ const scenarios = {
     const cancelled = { ...ACTIVE, status: "cancelled", standing: null };
     const p = makePage({
       items: [ACTIVE], others: [bid(30, 7, 100, "active", "outbid")], cancel: [409, { error: "bid is not active" }],
-      after: [cancelled], auctionId: "7", listFailsAfterPost: true,
+      after: [cancelled], auctionId: "7", listFailsAfterPost: true, storage: { ...WINNING_7 },
     });
     await settle();
     await p.click(p.buttons()[0]);
     return states(p);
+  },
+  // A successful cancel forgets the stored standing of its auction. The reload fails here, so the
+  // reload's own check cannot write the entry back and the removal itself is visible.
+  async standingForgotten() {
+    const p = makePage({
+      items: [bid(82, 20, 120, "active", "winning"), bid(80, 20, 100, "active", "outbid")],
+      others: [bid(81, 20, 110, "active", "outbid")], cancel: [200, { id: 82, auction_id: 20, status: "cancelled" }],
+      storage: { standing: JSON.stringify({ 20: "winning", 21: "winning" }) }, listFailsAfterPost: true,
+    });
+    await settle();
+    const before = stored(p);
+    await p.click(p.buttons()[0]);
+    return { before, after: stored(p), banner: p.banner() };
   },
   async buttonsPerRow() {
     const p = makePage({
