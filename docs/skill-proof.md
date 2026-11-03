@@ -10,10 +10,10 @@ and its real output is shown, cut to the last 12 lines.
 - Output (end):
 
 ```
-day-02                                      42 tests  OK        0.7s
+day-02                                      42 tests  OK        0.6s
 day-04                                      11 tests  OK        0.1s
-day-11                                     119 tests  OK       41.6s
-tests (kickoff harness)                     63 tests  OK        4.4s
+day-11                                     119 tests  OK       41.8s
+tests (kickoff harness)                     63 tests  OK        4.7s
 .claude/hooks/test_block_forbidden.py       11 tests  OK        0.6s
 .claude/hooks/test_hooks_extra.py           25 tests  OK        0.3s
 .claude/skills/review-checklist/test_check_branch.py    10 tests  OK        0.1s
@@ -55,27 +55,6 @@ T-02: 14/14 rows have their test
 T-03: 16/16 rows have their test
 T-04: 14/14 rows have their test
 OK: intent\2026-11-02-cancel-bid
-```
-
-## kickoff: scorecard of the finished kickoff
-
-- Command: `python scripts/score_kickoff.py intent/2026-11-02-cancel-bid`
-- Exit code: 0
-- Output (end):
-
-```
-- Ready at round 1: 3/4 (75%)
-- Ready at round 2: 0 | round 3: 1 | not ready: 0
-- Blocking questions from Devs: 3 | from QA: 0
-- Open questions sent to the client at intake: 13 | during the Dev round: 0
-- BA decisions: 6 in intake, 11 in tickets
-- Contradiction flagged by the BA: yes
-
-## Recall
-
-- BA recall: 8/8 (100%) (partial counts as half)
-- Hidden requirements recall: 2/2 (100%)
-- Missed: none
 ```
 
 ## release: notes generated for the range v0.2.0..v0.3.0
