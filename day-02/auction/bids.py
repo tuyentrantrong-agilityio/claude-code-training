@@ -48,6 +48,16 @@ class BidTooLowError(ValueError):
         self.minimum = minimum
 
 
+class BidNotFoundError(ValueError):
+    def __init__(self):
+        super().__init__("bid not found")
+
+
+class BidNotActiveError(ValueError):
+    def __init__(self):
+        super().__init__("bid is not active")
+
+
 def highest_bid(conn, auction_id):
     """Top active bid of an auction (highest amount, then earliest), or None."""
     return conn.execute(
@@ -87,6 +97,31 @@ def place_bid(conn, user_id, auction_id, amount, created_at, status="active"):
     if cur.rowcount == 0:
         raise BidTooLowError(minimum_next_bid(highest_bid(conn, auction_id)["amount"]))
     return cur.lastrowid
+
+
+def cancel_bid(conn, bid_id, user_id, now_ms=None):
+    """Cancel one of the user's own active bids and return its auction_id.
+
+    Raises BidNotFoundError for an unknown bid or another user's bid, and
+    BidNotActiveError when the bid is not active. The status change is one
+    statement, so two cancels of the same bid cannot both succeed.
+    now_ms is for the 5 minute window (T-02) and is not used yet.
+    """
+    cur = conn.execute(
+        "UPDATE bids SET status = 'cancelled' "
+        "WHERE id = ? AND user_id = ? AND status = 'active'",
+        (bid_id, user_id),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT auction_id, status FROM bids WHERE id = ? AND user_id = ?",
+        (bid_id, user_id),
+    ).fetchone()
+    if row is None:
+        raise BidNotFoundError()
+    if cur.rowcount == 0:
+        raise BidNotActiveError()
+    return row["auction_id"]
 
 
 def encode_cursor(created_at, bid_id):
