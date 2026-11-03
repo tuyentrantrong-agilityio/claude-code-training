@@ -24,8 +24,9 @@
 <p id="outbid-banner" role="status" style="color:#b00020"></p>
 <label>Page size <input id="limit" type="text" value="2"></label>
 <button id="reload">Reload</button>
+<p id="cancel-notice" aria-live="polite" style="color:#666"></p>
 <table>
-  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th></tr></thead>
+  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th><th>Cancel</th></tr></thead>
   <tbody id="rows"></tbody>
 </table>
 <button id="more" hidden>Load more</button>
@@ -88,12 +89,49 @@ async function load(reset) {
       if (v === "Outbid") td.style.color = "#b00020";
       tr.appendChild(td);
     }
+    const cell = document.createElement("td");
+    if (b.status === "active") {
+      const button = document.createElement("button");
+      button.textContent = "Cancel bid";
+      button.addEventListener("click", () => cancelBid(b, button));
+      cell.appendChild(button);
+    }
+    tr.appendChild(cell);
     $("rows").appendChild(tr);
   }
   if (reset) checkOutbid();
   nextCursor = data.next_cursor;
   $("more").hidden = !nextCursor;
   console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
+}
+
+// Cancel one own bid after the browser confirm dialog. The button stays disabled
+// until the answer arrives, so a double click sends one request.
+async function cancelBid(bid, button) {
+  const text = "Cancel bid " + bid.id + " on auction " + bid.auction_id + " (amount " + bid.amount + ")? This cannot be undone.";
+  if (!confirm(text)) return;
+  $("cancel-notice").textContent = "";
+  showError("");
+  button.disabled = true;
+  let res, data;
+  try {
+    res = await fetch("/api/bids/" + bid.id + "/cancel", { method: "POST" });
+    data = await res.json();
+  } catch (err) {
+    button.disabled = false;
+    showError("could not cancel bid " + bid.id);
+    return;
+  }
+  if (res.status === 200) {
+    $("cancel-notice").textContent = "Bid " + data.id + " on auction " + data.auction_id + " cancelled.";
+    await load(true);
+  } else if (res.status === 404 || res.status === 409) {
+    await load(true); // load() clears the error line, so set it afterwards
+    showError(data.error);
+  } else {
+    button.disabled = false;
+    showError("could not cancel bid " + bid.id);
+  }
 }
 
 // Auction ID rule for the hint: trimmed, digits only, 1 to 2^63-1; leading zeros dropped.
@@ -130,6 +168,7 @@ $("auction_id").addEventListener("input", refreshHint);
 
 $("bid-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  $("cancel-notice").textContent = "";
   let res, data;
   try {
     res = await fetch("/api/bids", {
