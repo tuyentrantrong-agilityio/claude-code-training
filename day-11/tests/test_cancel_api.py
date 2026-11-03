@@ -2,11 +2,13 @@
 import http.client
 import json
 import threading
+import time
 import unittest
 
 from webapp.server import USER, make_server, place_bid
 
-OTHER, T = 5, 1_700_000_000_000
+OTHER, MINUTE = 5, 60_000
+TOO_LATE = (409, {"error": "too late to cancel: bids can only be cancelled within 5 minutes"})
 NOT_FOUND = (404, {"error": "not found"})
 INVALID = (400, {"error": "invalid bid_id"})
 
@@ -21,9 +23,11 @@ class CancelApiTest(unittest.TestCase):
         self.server.shutdown()
         self.server.server_close()
 
-    def seed(self, user, auction_id, amount, status="active"):
+    def seed(self, user, auction_id, amount, status="active", age_ms=MINUTE):
+        # Rows go straight into the store the server uses, placed age_ms before now.
+        placed = int(time.time() * 1000) - age_ms
         with self.server.db_lock:
-            return place_bid(self.server.db, user, auction_id, amount, T, status=status)
+            return place_bid(self.server.db, user, auction_id, amount, placed, status=status)
 
     def stored(self):
         with self.server.db_lock:
@@ -52,7 +56,8 @@ class CancelApiTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(
             page["items"],
-            [{"id": mine, "auction_id": 7, "amount": 500, "status": "cancelled", "created_at": T, "standing": None}],
+            [{"id": mine, "auction_id": 7, "amount": 500, "status": "cancelled",
+              "created_at": before["created_at"], "standing": None}],
         )
 
     def test_cancel_other_users_or_unknown_bid_is_404(self):
@@ -125,6 +130,51 @@ class CancelApiTest(unittest.TestCase):
             self.assertEqual((resp.status, json.loads(resp.read())), (201, {"id": mine + 1}))
         finally:
             post.close()
+
+    def test_cancel_after_window_is_409_too_late(self):
+        late = self.seed(USER, 9, 300, age_ms=6 * MINUTE)
+        before = self.stored()
+        self.assertEqual(self.cancel(late), TOO_LATE)
+        self.assertEqual(self.stored(), before)
+
+    def test_pre_feature_bids_follow_the_same_window(self):
+        recent = self.seed(USER, 10, 150, age_ms=2 * MINUTE)
+        old = self.seed(USER, 10, 160, age_ms=60 * MINUTE)
+        self.assertEqual(self.cancel(recent), (200, {"id": recent, "auction_id": 10, "status": "cancelled"}))
+        self.assertEqual(self.cancel(old), TOO_LATE)
+        self.assertEqual([row["status"] for row in self.stored()], ["cancelled", "active"])
+
+    def test_two_simultaneous_cancels_one_wins(self):
+        mine = self.seed(USER, 11, 120)
+        barrier = threading.Barrier(2, timeout=10)
+        answers = []
+
+        def worker():
+            barrier.wait()
+            answers.append(self.cancel(mine))
+
+        threads = [threading.Thread(target=worker) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=20)
+        self.assertEqual(
+            sorted(answers, key=lambda a: a[0]),
+            [(200, {"id": mine, "auction_id": 11, "status": "cancelled"}), (409, {"error": "bid is not active"})],
+        )
+        self.assertEqual([(row["id"], row["status"]) for row in self.stored()], [(mine, "cancelled")])
+
+    def test_repeated_cancel_second_is_not_active(self):
+        mine = self.seed(USER, 11, 120)
+        self.assertEqual(self.cancel(mine), (200, {"id": mine, "auction_id": 11, "status": "cancelled"}))
+        self.assertEqual(self.cancel(mine), (409, {"error": "bid is not active"}))
+
+    def test_no_limit_on_number_of_cancels(self):
+        bids = [self.seed(USER, auction, 100 + auction) for auction in (12, 13, 14)]
+        for bid, auction in zip(bids, (12, 13, 14)):
+            with self.subTest(bid=bid):
+                self.assertEqual(self.cancel(bid), (200, {"id": bid, "auction_id": auction, "status": "cancelled"}))
+        self.assertEqual([row["status"] for row in self.stored()], ["cancelled"] * 3)
 
 
 if __name__ == "__main__":

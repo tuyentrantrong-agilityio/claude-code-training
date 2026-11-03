@@ -9,6 +9,7 @@ inserted straight into the database because the UI cannot act as another user.
 import os
 import sqlite3
 import sys
+import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "day-11"))
@@ -17,7 +18,8 @@ sys.path.insert(0, os.path.join(ROOT, "day-02"))
 import webapp.server as srv  # noqa: E402
 from auction.bids import place_bid  # noqa: E402
 
-T = 1_700_000_000_000
+NOW = int(time.time() * 1000)
+T = NOW - 60_000  # one minute old: inside the 5 minute cancel window while a run lasts
 
 
 def seed(conn):
@@ -27,6 +29,7 @@ def seed(conn):
     place_bid(conn, 42, 9, 80, T + 3)
     place_bid(conn, 42, 9, 120, T + 4)  # own higher bid, the older one is outbid
     place_bid(conn, 42, 11, 60, T + 5, status="cancelled")  # no standing
+    place_bid(conn, 42, 12, 40, NOW - 6 * 60_000)  # six minutes old: too late to cancel
 
 
 def main(port):

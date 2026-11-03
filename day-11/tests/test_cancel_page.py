@@ -105,6 +105,18 @@ class CancelPageTest(unittest.TestCase):
              "afterBidPost": ""},
         )
 
+    def test_too_late_shows_error_line_and_keeps_button(self):
+        got = self.scenario("tooLate")
+        self.assertEqual(got["posts"], ["/api/bids/42/cancel"])
+        self.assertEqual(got["loads"], 2)
+        self.assertEqual(got["notice"], "")
+        self.assertEqual(got["error"], "too late to cancel: bids can only be cancelled within 5 minutes")
+        self.assertEqual(got["rows"], [[42, 9, 300, "active", "Winning", ""]])
+        self.assertEqual(got["hasButton"], [True])
+
+    def test_button_shown_on_old_active_rows(self):
+        self.assertEqual(self.scenario("oldActiveRows"), {"buttons": ["Cancel bid", "Cancel bid"]})
+
     def test_confirm_dismissed_sends_nothing(self):
         got = self.scenario("dismissed")
         self.assertEqual(got["confirms"], [DIALOG])

@@ -82,6 +82,7 @@ process.on("uncaughtException", (e) => unhandled.push(String(e)));
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const ACTIVE = { id: 31, auction_id: 7, amount: 500, status: "active", standing: "winning" };
+const TOO_LATE = "too late to cancel: bids can only be cancelled within 5 minutes";
 
 const scenarios = {
   async accepted() {
@@ -171,6 +172,26 @@ const scenarios = {
     p.el("bid-form").listeners.submit.forEach((f) => f({ preventDefault() {} }));
     await settle();
     return { afterFirst, duringSecond, afterSecond, afterBidPost: p.el("cancel-notice").textContent };
+  },
+  async tooLate() {
+    const old = { id: 42, auction_id: 9, amount: 300, status: "active", standing: "winning", created_at: 1 };
+    const p = makePage({ items: [old], cancel: [409, { error: TOO_LATE }] });
+    await settle();
+    await p.click(p.buttons()[0]);
+    return {
+      posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
+      error: p.el("error").textContent, rows: p.rows(), hasButton: p.buttons().map((b) => b !== null),
+    };
+  },
+  async oldActiveRows() {
+    const p = makePage({
+      items: [
+        { id: 42, auction_id: 9, amount: 300, status: "active", standing: "winning", created_at: 1 },
+        { id: 43, auction_id: 9, amount: 200, status: "active", standing: "outbid", created_at: 1793613600000 },
+      ],
+    });
+    await settle();
+    return { buttons: p.buttons().map((b) => (b === null ? null : b.textContent)) };
   },
   async buttonsPerRow() {
     const p = makePage({

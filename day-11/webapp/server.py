@@ -11,8 +11,8 @@ from urllib.parse import parse_qs, urlparse, urlsplit
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
 from auction.bids import (  # noqa: E402
-    SCHEMA, BidNotActiveError, BidNotFoundError, BidTooLowError, cancel_bid, list_my_bids,
-    minimum_bid, place_bid,
+    SCHEMA, BidNotActiveError, BidNotFoundError, BidTooLowError, CancelTooLateError, cancel_bid,
+    list_my_bids, minimum_bid, place_bid,
 )
 
 USER = 42
@@ -119,10 +119,10 @@ def make_server(port=8000):
                 return self._send(400, {"error": "invalid bid_id"})
             try:
                 with lock:
-                    auction_id = cancel_bid(conn, bid_id, USER, int(time.time() * 1000))
+                    auction_id = cancel_bid(conn, bid_id, USER)
             except BidNotFoundError as exc:
                 return self._send(404, {"error": str(exc)})
-            except BidNotActiveError as exc:
+            except (BidNotActiveError, CancelTooLateError) as exc:
                 return self._send(409, {"error": str(exc)})
             self._send(200, {"id": bid_id, "auction_id": auction_id, "status": "cancelled"})
 
