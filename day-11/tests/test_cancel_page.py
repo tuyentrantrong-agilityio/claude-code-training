@@ -113,6 +113,7 @@ class CancelPageTest(unittest.TestCase):
         self.assertEqual(got["error"], "too late to cancel: bids can only be cancelled within 5 minutes")
         self.assertEqual(got["rows"], [[42, 9, 300, "active", "Winning", ""]])
         self.assertEqual(got["hasButton"], [True])
+        self.assertEqual(got["disabled"], [False])
 
     def test_button_shown_on_old_active_rows(self):
         self.assertEqual(self.scenario("oldActiveRows"), {"buttons": ["Cancel bid", "Cancel bid"]})

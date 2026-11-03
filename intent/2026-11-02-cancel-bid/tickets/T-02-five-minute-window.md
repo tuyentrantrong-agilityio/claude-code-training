@@ -38,7 +38,7 @@ And the server calls `cancel_bid` without `now_ms` (real clock); no clock settin
 
 ### S4 Bids stored before the feature follow the same window
 
-Given bid 43 of 150 by user 42 on auction 10 is an active row inserted straight into the store with `created_at` equal to the server clock minus 120000 ms (2 minutes ago), and bid 44 of 150 by user 42 on auction 10 is an active row inserted the same way with `created_at` minus 3600000 ms (1 hour ago)
+Given bid 43 of 150 by user 42 on auction 10 is an active row inserted straight into the store with `created_at` equal to the server clock minus 120000 ms (2 minutes ago), and bid 44 of 160 by user 42 on auction 10 is an active row inserted the same way with `created_at` minus 3600000 ms (1 hour ago)
 When the client sends `POST /api/bids/43/cancel`, then `POST /api/bids/44/cancel`
 Then bid 43 answers 200 `{"id": 43, "auction_id": 10, "status": "cancelled"}` and is stored as `cancelled`
 And bid 44 answers 409 `{"error": "too late to cancel: bids can only be cancelled within 5 minutes"}` and stays `active`

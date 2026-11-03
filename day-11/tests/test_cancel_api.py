@@ -1,4 +1,4 @@
-"""T-01: POST /api/bids/<id>/cancel (intent/2026-11-02-cancel-bid)."""
+"""T-01 and T-02: POST /api/bids/<id>/cancel and its 5 minute window (intent/2026-11-02-cancel-bid)."""
 import http.client
 import json
 import threading

@@ -181,6 +181,7 @@ const scenarios = {
     return {
       posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
       error: p.el("error").textContent, rows: p.rows(), hasButton: p.buttons().map((b) => b !== null),
+      disabled: p.buttons().map((b) => (b === null ? null : b.disabled)),
     };
   },
   async oldActiveRows() {

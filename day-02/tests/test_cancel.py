@@ -1,4 +1,4 @@
-"""T-01: cancel_bid in the bids store (intent/2026-11-02-cancel-bid)."""
+"""T-01 and T-02: cancel_bid in the bids store and its 5 minute window (intent/2026-11-02-cancel-bid)."""
 import os
 import tempfile
 import threading
@@ -85,6 +85,8 @@ class CancelWindowTest(unittest.TestCase):
     def test_now_ms_defaults_to_current_time(self):
         fresh = place_bid(self.conn, 42, 9, 100, int(time.time() * 1000))
         self.assertEqual(cancel_bid(self.conn, fresh, 42), 9)
+        row = self.conn.execute("SELECT status FROM bids WHERE id = ?", (fresh,)).fetchone()
+        self.assertEqual(row["status"], "cancelled")
         old = place_bid(self.conn, 42, 10, 100, int(time.time() * 1000) - WINDOW - 5000)
         with self.assertRaises(CancelTooLateError):
             cancel_bid(self.conn, old, 42)
