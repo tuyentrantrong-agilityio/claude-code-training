@@ -9,7 +9,7 @@ const html = fs.readFileSync(process.argv[2], "utf8");
 const script = html.match(/<script>([\s\S]*)<\/script>/)[1];
 
 function response(status, body) {
-  const text = JSON.stringify(body);
+  const text = typeof body === "string" ? body : JSON.stringify(body);
   return { ok: status >= 200 && status < 300, status, text: async () => text, json: async () => JSON.parse(text) };
 }
 
@@ -45,7 +45,9 @@ function makePage({ items, cancel = null, confirmAnswer = true, after = null }) 
   const fetch = (url, opts = {}) => {
     const method = opts.method || "GET";
     requests.push({ method, url });
+    if (method === "POST" && url === "/api/bids") return Promise.resolve(response(201, { id: 9 }));
     if (method === "POST") {
+      if (state.cancel === "network") return Promise.reject(new TypeError("Failed to fetch"));
       if (state.cancel === "defer") return new Promise((resolve) => pending.push(resolve));
       return Promise.resolve(apply(...state.cancel));
     }
@@ -126,6 +128,49 @@ const scenarios = {
       posts: p.posts(), loads: p.loads(), notice: p.el("cancel-notice").textContent,
       error: p.el("error").textContent, rows: p.rows(),
     };
+  },
+  async networkFailure() {
+    const p = makePage({ items: [ACTIVE], cancel: "network" });
+    await settle();
+    const button = p.buttons()[0];
+    await p.click(button);
+    return {
+      posts: p.posts(), loads: p.loads(), disabled: button.disabled, notice: p.el("cancel-notice").textContent,
+      error: p.el("error").textContent, rows: p.rows(),
+    };
+  },
+  async otherStatus() {
+    const out = {};
+    const cases = { "500": [500, { error: "boom" }], "400": [400, { error: "bad" }], "notJson": [200, "<html>oops</html>"] };
+    for (const [name, answer] of Object.entries(cases)) {
+      const p = makePage({ items: [ACTIVE], cancel: answer });
+      await settle();
+      const button = p.buttons()[0];
+      await p.click(button);
+      out[name] = {
+        posts: p.posts(), loads: p.loads(), disabled: button.disabled, notice: p.el("cancel-notice").textContent,
+        error: p.el("error").textContent, rows: p.rows(),
+      };
+    }
+    return out;
+  },
+  async noticeCleared() {
+    const other = { id: 32, auction_id: 8, amount: 90, status: "active", standing: "outbid" };
+    const p = makePage({ items: [ACTIVE, other], cancel: "defer" });
+    await settle();
+    await p.click(p.buttons()[0]);
+    p.answer(200, { id: 31, auction_id: 7, status: "cancelled" });
+    await settle();
+    const afterFirst = p.el("cancel-notice").textContent;
+    p.el("error").textContent = "old error";
+    await p.click(p.buttons().find((b) => b !== null));
+    const duringSecond = { notice: p.el("cancel-notice").textContent, error: p.el("error").textContent };
+    p.answer(200, { id: 32, auction_id: 8, status: "cancelled" });
+    await settle();
+    const afterSecond = p.el("cancel-notice").textContent;
+    p.el("bid-form").listeners.submit.forEach((f) => f({ preventDefault() {} }));
+    await settle();
+    return { afterFirst, duringSecond, afterSecond, afterBidPost: p.el("cancel-notice").textContent };
   },
   async buttonsPerRow() {
     const p = makePage({

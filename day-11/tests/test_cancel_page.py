@@ -78,6 +78,33 @@ class CancelPageTest(unittest.TestCase):
         self.assertEqual(got["error"], "bid not found")
         self.assertEqual(got["rows"], [[31, 7, 500, "active", "Winning", ""]])
 
+    def test_network_failure_shows_could_not_cancel(self):
+        got = self.scenario("networkFailure")
+        self.assertEqual(got["posts"], ["/api/bids/31/cancel"])
+        self.assertEqual(got["loads"], 1)
+        self.assertEqual(got["disabled"], False)
+        self.assertEqual(got["notice"], "")
+        self.assertEqual(got["error"], "could not cancel bid 31")
+        self.assertEqual(got["rows"], [[31, 7, 500, "active", "Winning", ""]])
+
+    def test_other_status_shows_could_not_cancel(self):
+        for name, got in self.scenario("otherStatus").items():
+            with self.subTest(answer=name):
+                self.assertEqual(
+                    got,
+                    {"posts": ["/api/bids/31/cancel"], "loads": 1, "disabled": False, "notice": "",
+                     "error": "could not cancel bid 31", "rows": [[31, 7, 500, "active", "Winning", ""]]},
+                )
+
+    def test_notice_cleared_by_next_cancel_or_bid_post(self):
+        self.assertEqual(
+            self.scenario("noticeCleared"),
+            {"afterFirst": "Bid 31 on auction 7 cancelled.",
+             "duringSecond": {"notice": "", "error": ""},
+             "afterSecond": "Bid 32 on auction 8 cancelled.",
+             "afterBidPost": ""},
+        )
+
     def test_confirm_dismissed_sends_nothing(self):
         got = self.scenario("dismissed")
         self.assertEqual(got["confirms"], [DIALOG])
