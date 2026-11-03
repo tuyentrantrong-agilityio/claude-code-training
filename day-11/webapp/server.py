@@ -10,13 +10,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse, urlsplit
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "day-02"))
-from auction.bids import SCHEMA, BidTooLowError, list_my_bids, minimum_bid, place_bid  # noqa: E402
+from auction.bids import (  # noqa: E402
+    SCHEMA, BidNotActiveError, BidNotFoundError, BidTooLowError, CancelTooLateError, cancel_bid,
+    list_my_bids, minimum_bid, place_bid,
+)
 
 USER = 42
 MAX_VALUE = 2**63 - 1  # SQLite INTEGER limit
 INDEX = os.path.join(os.path.dirname(__file__), "index.html")
 # One raw path segment (not percent-decoded, may be empty) between the fixed parts.
 MINIMUM_BID_PATH = re.compile(r"/api/auctions/([^/]*)/minimum-bid")
+CANCEL_PATH = re.compile(r"/api/bids/([^/]*)/cancel")
 
 
 def to_int(value):
@@ -109,7 +113,23 @@ def make_server(port=8000):
                 return lambda: self._send(404, {"error": "not found"})
             raise AttributeError(name)
 
+        def _cancel(self, segment):
+            bid_id = parse_auction_id(segment)  # same rules as an auction id
+            if bid_id is None:
+                return self._send(400, {"error": "invalid bid_id"})
+            try:
+                with lock:
+                    auction_id = cancel_bid(conn, bid_id, USER)
+            except BidNotFoundError as exc:
+                return self._send(404, {"error": str(exc)})
+            except (BidNotActiveError, CancelTooLateError) as exc:
+                return self._send(409, {"error": str(exc)})
+            self._send(200, {"id": bid_id, "auction_id": auction_id, "status": "cancelled"})
+
         def do_POST(self):
+            cancel = CANCEL_PATH.fullmatch(request_path(self.path))
+            if cancel:
+                return self._cancel(cancel.group(1))
             if self.path != "/api/bids":
                 return self._send(404, {"error": "not found"})
             try:

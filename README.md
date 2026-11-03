@@ -68,7 +68,7 @@ folder layout is in [`intent/README.md`](intent/README.md).
 | Scripts | `scripts/lint_tickets.py`, `scripts/score_kickoff.py`, `scripts/check_matrix.py`, `scripts/review_context.py`, `scripts/review_findings.py`, `scripts/release_notes.py` (tests in `tests/`) |
 | Status line | the kickoff stage and whether a gate is waiting |
 | Slash command | `.claude/commands/pr-description.md` |
-| MCP | `.mcp.json`: GitHub (issues at the kickoff `promote` stage) and Playwright; Claude in Chrome drives the web app for evidence |
+| MCP | `.mcp.json`: GitHub (issues at the kickoff `promote` stage) and Playwright; Claude in Chrome drives the web app for evidence. Flows, status and evidence links: [docs/mcp.md](docs/mcp.md) |
 | CI | `.github/workflows/ci.yml`: every test suite, kickoff lint, test matrix against real tests and the CLAUDE.md commit check on each PR |
 | Loop | `.claude/loop.md`: what `/loop` checks on the `practice` branch |
 

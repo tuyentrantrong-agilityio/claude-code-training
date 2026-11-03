@@ -38,6 +38,9 @@ There is no auction table: an auction exists as soon as it has a bid.
   `bid must be at least <minimum next bid>`. (Since T-01, intent/2026-11-02-minimum-raise.)
 - **Standing** of a bid in a listing: `winning` if it is the highest bid of its
   auction, `outbid` if it is active but not the highest, `null` if it is not active.
+  Nothing is stored: after a cancel the highest bid, the standings and the minimum next bid are
+  computed again from the remaining active bids on the next request, so the auction carries on as if
+  the cancelled bid had never been placed (T-03).
 - **My bids** (`list_my_bids`): the user's bids, newest first by (`created_at`, `id`).
   `limit` must be 1 to 100. `next_cursor` is set when a full page was returned and
   is an opaque base64 string; a malformed cursor raises `ValueError("invalid cursor")`.
@@ -53,14 +56,19 @@ memory and resets on restart. One shared connection is guarded by a lock.
 | `GET /api/bids?limit=&cursor=` | 200 `{"items": [...], "next_cursor": ...}`; 400 `{"error": ...}` for a bad limit or cursor |
 | `POST /api/bids` `{"auction_id", "amount"}` | 201 `{"id": n}`; 400 if a value is missing, not an integer (floats and booleans too), below 1 or too large; 409 `bid must be at least <minimum next bid>` |
 | `GET /api/auctions/<auction_id>/minimum-bid` | 200 `{"auction_id", "highest", "step", "minimum_bid"}` (`highest` and `step` null and `minimum_bid` 1 with no active bid); 400 `{"error": "invalid auction_id"}` unless the raw segment is digits with value 1 to 2^63-1 |
-| anything else (other paths, `minimum-bid;params`, any other method; HEAD gets the 404 headers only) | 404 `{"error": "not found"}` |
+| `POST /api/bids/<bid_id>/cancel` | 200 `{"id", "auction_id", "status": "cancelled"}` for the user's own active bid; 400 `{"error": "invalid bid_id"}` unless the raw segment is digits with value 1 to 2^63-1 (leading zeros allowed); 404 `{"error": "bid not found"}` for an unknown bid or another user's bid; 409 `{"error": "bid is not active"}`; 409 `{"error": "too late to cancel: bids can only be cancelled within 5 minutes"}` when more than 300000 ms (server clock, epoch milliseconds) passed since the bid was placed; exactly 300000 ms is still in time. Checks run in the order not found, not active, too late. Body and query string are ignored. (Since T-01 and T-02, intent/2026-11-02-cancel-bid.) |
+| anything else (other paths, `minimum-bid;params`, a cancel path with a trailing slash, `;params` or an extra segment, any other method; HEAD gets the 404 headers only) | 404 `{"error": "not found"}` |
 
 `GET /` and `GET /api/bids` ignore `;params` in the path (they read it through `urlparse`);
 only the minimum-bid route treats them as an unknown path.
 
 The page has a form (Auction ID, Amount, minimum bid hint, Place bid), a page size field with
-Reload, a table (ID, Auction, Amount, Status, Standing) with "Load more", a red
-error line, and an outbid banner "You were outbid on auction N". The banner
+Reload, a cancel notice line (`id="cancel-notice"`, above the table), a table (ID, Auction,
+Amount, Status, Standing, Cancel) with "Load more", a red error line, and an outbid
+banner "You were outbid on auction N". Each active row has a `Cancel bid` button: after
+the browser confirm dialog it sends the cancel, the button stays disabled until the answer
+arrives, a 200 sets the notice "Bid N on auction M cancelled." and reloads My bids, and a
+404 or 409 reloads first and then shows the error text in the red line (T-01); the button shows on every active row whatever its age, and the server decides (T-02). After a 200 the page also forgets the stored standing of that auction (so a cancel never shows the outbid banner), and after a 200, 404 or 409 it reloads, sets the error line, and then requests the minimum bid hint again for the Auction ID field value at that moment; a failed reload does not stop those steps. A network failure, another status or a body that is not JSON shows "could not cancel bid N", enables the button again and changes nothing else (T-04). The banner
 compares the standing per auction with the one kept in `localStorage` from the
 previous load, using its own request for the first 100 bids. Placing a new own
 bid on an auction clears its stored standing. The minimum bid hint

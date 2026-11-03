@@ -16,11 +16,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _kickoff import current_folder, emit, gate_approved, project_dir, read_payload, read_state  # noqa: E402
 
 APPROVE = re.compile(r"^\s*/?approve\s+gate\s*-?\s*([123])\b", re.I)
+# Context the IDE puts in front of what the user typed, e.g. <ide_opened_file>...</ide_opened_file>.
+# Greedy on purpose: selected text may contain a closing tag, so a block ends at its LAST
+# closing tag; text after an early one, such as a fake "approve gate N", stays hidden.
+IDE_CONTEXT = re.compile(r"^\s*<(ide_[a-z_]+)>.*</\1>", re.S)
+
+
+def typed_text(prompt):
+    """The prompt without the IDE context blocks in front of it."""
+    while True:
+        match = IDE_CONTEXT.match(prompt)
+        if not match:
+            return prompt
+        prompt = prompt[match.end():]
 
 
 def handle(payload):
     """Return the context note for Claude, or None when the prompt is not an approval."""
-    prompt = payload.get("prompt") or ""
+    prompt = typed_text(payload.get("prompt") or "")
     match = APPROVE.match(prompt)
     if not match:
         return None

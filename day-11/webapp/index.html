@@ -24,8 +24,9 @@
 <p id="outbid-banner" role="status" style="color:#b00020"></p>
 <label>Page size <input id="limit" type="text" value="2"></label>
 <button id="reload">Reload</button>
+<p id="cancel-notice" aria-live="polite" style="color:#666"></p>
 <table>
-  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th></tr></thead>
+  <thead><tr><th>ID</th><th>Auction</th><th>Amount</th><th>Status</th><th>Standing</th><th>Cancel</th></tr></thead>
   <tbody id="rows"></tbody>
 </table>
 <button id="more" hidden>Load more</button>
@@ -41,6 +42,13 @@ function showError(msg) {
 // Last known standing per auction, kept in the browser between page loads.
 function readSeen() {
   try { return JSON.parse(localStorage.getItem("standing") || "{}"); } catch (e) { return {}; }
+}
+
+// Forget the stored standing of one auction: a bid of the user's own is not an "outbid by someone else" event.
+function forgetStanding(auctionId) {
+  const seen = readSeen();
+  delete seen[String(auctionId)];
+  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
 }
 
 // An auction is "winning" if any of the user's bids on it is the top one.
@@ -88,12 +96,50 @@ async function load(reset) {
       if (v === "Outbid") td.style.color = "#b00020";
       tr.appendChild(td);
     }
+    const cell = document.createElement("td");
+    if (b.status === "active") {
+      const button = document.createElement("button");
+      button.textContent = "Cancel bid";
+      button.addEventListener("click", () => cancelBid(b, button));
+      cell.appendChild(button);
+    }
+    tr.appendChild(cell);
     $("rows").appendChild(tr);
   }
   if (reset) checkOutbid();
   nextCursor = data.next_cursor;
   $("more").hidden = !nextCursor;
   console.log("loaded", data.items.length, "bids, next_cursor:", nextCursor);
+}
+
+// Cancel one own bid after the browser confirm dialog. The button stays disabled
+// until the answer arrives, so a double click sends one request.
+async function cancelBid(bid, button) {
+  const text = "Cancel bid " + bid.id + " on auction " + bid.auction_id + " (amount " + bid.amount + ")? This cannot be undone.";
+  if (!confirm(text)) return;
+  $("cancel-notice").textContent = "";
+  showError("");
+  button.disabled = true;
+  let res, data;
+  try {
+    res = await fetch("/api/bids/" + bid.id + "/cancel", { method: "POST" });
+    data = await res.json();
+  } catch (err) {
+    button.disabled = false;
+    showError("could not cancel bid " + bid.id);
+    return;
+  }
+  if (res.status === 200) {
+    $("cancel-notice").textContent = "Bid " + data.id + " on auction " + data.auction_id + " cancelled.";
+    forgetStanding(data.auction_id);
+  } else if (res.status !== 404 && res.status !== 409) {
+    button.disabled = false;
+    showError("could not cancel bid " + bid.id);
+    return;
+  }
+  try { await load(true); } catch (err) {} // a failed reload must not hide the answer below
+  if (res.status !== 200) showError(data.error); // load() clears the error line, so set it afterwards
+  refreshHint();
 }
 
 // Auction ID rule for the hint: trimmed, digits only, 1 to 2^63-1; leading zeros dropped.
@@ -130,6 +176,7 @@ $("auction_id").addEventListener("input", refreshHint);
 
 $("bid-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  $("cancel-notice").textContent = "";
   let res, data;
   try {
     res = await fetch("/api/bids", {
@@ -146,9 +193,7 @@ $("bid-form").addEventListener("submit", async (e) => {
   if (!res.ok) { showError(data.error); return; }
   console.log("placed bid", data.id);
   // Own new bid is not an "outbid by someone else" event.
-  const seen = readSeen();
-  delete seen[String(parseInt($("auction_id").value, 10))];
-  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
+  forgetStanding(parseInt($("auction_id").value, 10));
   load(true);
 });
 $("reload").addEventListener("click", () => load(true));
