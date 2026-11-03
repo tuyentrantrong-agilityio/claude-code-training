@@ -1,6 +1,7 @@
 # T-03 Recalculate the auction after a cancel
 
 Status: ready
+Issue: #26
 Dev rounds: 1
 Spec: [Cancel a bid](../spec.md#what-a-cancel-changes)
 

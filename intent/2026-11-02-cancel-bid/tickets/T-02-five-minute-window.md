@@ -1,6 +1,7 @@
 # T-02 Limit cancels to five minutes
 
 Status: ready
+Issue: #25
 Dev rounds: 1
 Spec: [Cancel a bid](../spec.md#who-can-cancel-what)
 

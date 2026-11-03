@@ -1,6 +1,7 @@
 # T-01 Cancel a recent bid from My bids
 
 Status: ready
+Issue: #24
 Dev rounds: 1
 Spec: [Cancel a bid](../spec.md#behaviour)
 

@@ -1,6 +1,7 @@
 # T-04 Keep the page in step after a cancel
 
 Status: ready
+Issue: #27
 Dev rounds: 3
 Spec: [Cancel a bid](../spec.md#page)
 
