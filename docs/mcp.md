@@ -11,6 +11,18 @@ command. Evidence is saved in the repo, next to the flow it proves.
 
 Claude in Chrome and Playwright have a recorded run each; GitHub has reads and two writes, but creating an issue through it was not recorded.
 
+## Shared run reports
+
+Each MCP has one report page that Claude wrote from the saved run files: the result, the
+tool calls in order, the proof. The pages are artifacts on claude.ai, private to the owner
+until the owner shares them, so the repo files above stay the record.
+
+| MCP | Report page |
+|---|---|
+| Claude in Chrome | https://claude.ai/artifact/8C8Ezvba8m7gbd9hpUALgN |
+| GitHub | https://claude.ai/artifact/2cvHVTLN5kySxoeLUEtdSC |
+| Playwright | https://claude.ai/artifact/GsnFwixgvceX3LnFQNoerY |
+
 ## Flow 1: Claude in Chrome (done, recorded)
 
 Command: `/evidence` ([guide](../.claude/skills/evidence/SKILL.md)). Claude, in order:
