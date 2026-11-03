@@ -198,6 +198,13 @@ class RecalculationApiTest(ApiCase):
             items = list_my_bids(self.server.db, user, limit=100)["items"]
         return next(item["standing"] for item in items if item["id"] == bid_id)
 
+    def test_cancel_highest_restores_previous_price_over_http(self):
+        others = self.seed(OTHER, 7, 100)
+        mine = self.seed(USER, 7, 500)
+        self.assertEqual(self.cancel(mine), (200, {"id": mine, "auction_id": 7, "status": "cancelled"}))
+        self.assertEqual(self.lookup(7), (200, {"auction_id": 7, "highest": 100, "step": 10, "minimum_bid": 110}))
+        self.assertEqual(self.standing_of(OTHER, others), "winning")
+
     def test_cancel_outbid_bid_leaves_price_unchanged(self):
         mine = self.seed(USER, 8, 100)
         others = self.seed(OTHER, 8, 200)
@@ -216,7 +223,7 @@ class RecalculationApiTest(ApiCase):
     def test_bid_again_after_cancel_is_accepted(self):
         self.seed(OTHER, 7, 100)
         cancelled = self.seed(USER, 7, 500)
-        self.cancel(cancelled)
+        self.assertEqual(self.cancel(cancelled)[0], 200)
         self.assertEqual(self.bid(7, 150), (201, {"id": cancelled + 1}))
         self.assertEqual(self.bid(7, 500), (201, {"id": cancelled + 2}))
         self.assertEqual(
@@ -226,7 +233,7 @@ class RecalculationApiTest(ApiCase):
 
     def test_cancel_only_bid_frees_the_auction(self):
         mine = self.seed(USER, 12, 300)
-        self.cancel(mine)
+        self.assertEqual(self.cancel(mine)[0], 200)
         self.assertEqual(self.lookup(12), (200, {"auction_id": 12, "highest": None, "step": None, "minimum_bid": 1}))
         # The API has one fixed user (42), so the bid of 1 comes from user 42, not user 5.
         self.assertEqual(self.bid(12, 1), (201, {"id": mine + 1}))
@@ -234,7 +241,7 @@ class RecalculationApiTest(ApiCase):
 
     def test_bid_below_new_minimum_after_cancel_is_409(self):
         self.seed(OTHER, 7, 100)
-        self.cancel(self.seed(USER, 7, 500))
+        self.assertEqual(self.cancel(self.seed(USER, 7, 500))[0], 200)
         before = self.stored()
         self.assertEqual(self.bid(7, 105), (409, {"error": "bid must be at least 110"}))
         self.assertEqual(self.stored(), before)
@@ -242,14 +249,14 @@ class RecalculationApiTest(ApiCase):
     def test_minimum_boundary_after_cancel(self):
         self.seed(OTHER, 7, 100)
         cancelled = self.seed(USER, 7, 500)
-        self.cancel(cancelled)
+        self.assertEqual(self.cancel(cancelled)[0], 200)
         self.assertEqual(self.bid(7, 109), (409, {"error": "bid must be at least 110"}))
         self.assertEqual(self.bid(7, 110), (201, {"id": cancelled + 1}))
 
     def test_cancel_to_lower_step_refuses_995(self):
         self.seed(OTHER, 13, 990)
         mine = self.seed(USER, 13, 1000)
-        self.cancel(mine)
+        self.assertEqual(self.cancel(mine)[0], 200)
         self.assertEqual(self.lookup(13), (200, {"auction_id": 13, "highest": 990, "step": 10, "minimum_bid": 1000}))
         before = self.stored()
         self.assertEqual(self.bid(13, 995), (409, {"error": "bid must be at least 1000"}))
@@ -260,7 +267,7 @@ class RecalculationApiTest(ApiCase):
         older = self.seed(USER, 7, 500, age_ms=2 * MINUTE)
         newer = self.seed(USER, 8, 300, age_ms=MINUTE)
         before = self.stored()
-        self.cancel(older)
+        self.assertEqual(self.cancel(older)[0], 200)
         self.assertEqual(self.my_bids(), [(newer, "active", "winning"), (older, "cancelled", None)])
         self.assertEqual([row["id"] for row in self.stored()], [row["id"] for row in before])
 
