@@ -205,6 +205,14 @@ class RecalculationApiTest(ApiCase):
         self.assertEqual(self.lookup(8), (200, {"auction_id": 8, "highest": 200, "step": 10, "minimum_bid": 210}))
         self.assertEqual(self.standing_of(OTHER, others), "winning")
 
+    def test_other_user_sees_new_price_on_next_request(self):
+        self.seed(OTHER, 7, 100)
+        mine = self.seed(USER, 7, 500)
+        self.assertEqual(self.lookup(7), (200, {"auction_id": 7, "highest": 500, "step": 10, "minimum_bid": 510}))
+        self.assertEqual(self.cancel(mine)[0], 200)
+        # The lookup names no user: a bidder on another connection gets the recalculated price at once.
+        self.assertEqual(self.lookup(7), (200, {"auction_id": 7, "highest": 100, "step": 10, "minimum_bid": 110}))
+
     def test_own_earlier_bid_becomes_winning_again(self):
         earlier = self.seed(USER, 9, 100)
         later = self.seed(USER, 9, 150)

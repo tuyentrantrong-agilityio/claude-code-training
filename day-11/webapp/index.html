@@ -44,6 +44,13 @@ function readSeen() {
   try { return JSON.parse(localStorage.getItem("standing") || "{}"); } catch (e) { return {}; }
 }
 
+// Forget the stored standing of one auction: a bid of the user's own is not an "outbid by someone else" event.
+function forgetStanding(auctionId) {
+  const seen = readSeen();
+  delete seen[String(auctionId)];
+  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
+}
+
 // An auction is "winning" if any of the user's bids on it is the top one.
 // Uses its own request (max page size) so paging does not hide a winning bid.
 let checkSeq = 0;
@@ -124,14 +131,15 @@ async function cancelBid(bid, button) {
   }
   if (res.status === 200) {
     $("cancel-notice").textContent = "Bid " + data.id + " on auction " + data.auction_id + " cancelled.";
-    await load(true);
-  } else if (res.status === 404 || res.status === 409) {
-    await load(true); // load() clears the error line, so set it afterwards
-    showError(data.error);
-  } else {
+    forgetStanding(data.auction_id);
+  } else if (res.status !== 404 && res.status !== 409) {
     button.disabled = false;
     showError("could not cancel bid " + bid.id);
+    return;
   }
+  try { await load(true); } catch (err) {} // a failed reload must not hide the answer below
+  if (res.status !== 200) showError(data.error); // load() clears the error line, so set it afterwards
+  refreshHint();
 }
 
 // Auction ID rule for the hint: trimmed, digits only, 1 to 2^63-1; leading zeros dropped.
@@ -185,9 +193,7 @@ $("bid-form").addEventListener("submit", async (e) => {
   if (!res.ok) { showError(data.error); return; }
   console.log("placed bid", data.id);
   // Own new bid is not an "outbid by someone else" event.
-  const seen = readSeen();
-  delete seen[String(parseInt($("auction_id").value, 10))];
-  try { localStorage.setItem("standing", JSON.stringify(seen)); } catch (err) {}
+  forgetStanding(parseInt($("auction_id").value, 10));
   load(true);
 });
 $("reload").addEventListener("click", () => load(true));
