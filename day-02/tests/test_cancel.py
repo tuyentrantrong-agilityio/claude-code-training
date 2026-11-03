@@ -1,4 +1,4 @@
-"""T-01 and T-02: cancel_bid in the bids store and its 5 minute window (intent/2026-11-02-cancel-bid)."""
+"""T-01 to T-03: cancel_bid in the bids store, its 5 minute window and the auction afterwards (intent/2026-11-02-cancel-bid)."""
 import os
 import tempfile
 import threading
@@ -6,7 +6,8 @@ import time
 import unittest
 
 from auction.bids import (
-    BidNotActiveError, BidNotFoundError, CancelTooLateError, cancel_bid, connect, place_bid,
+    BidNotActiveError, BidNotFoundError, CancelTooLateError, cancel_bid, connect, highest_bid,
+    list_my_bids, minimum_bid, place_bid,
 )
 
 T = 1_700_000_000_000
@@ -132,6 +133,87 @@ class CancelRaceTest(unittest.TestCase):
             rows = [dict(r) for r in check.execute("SELECT id, status FROM bids")]
             check.close()
             self.assertEqual(rows, [{"id": bid, "status": "cancelled"}])
+
+
+class RecalculationTest(unittest.TestCase):
+    """T-03: after a cancel the auction is computed as if the bid had never been placed."""
+
+    def setUp(self):
+        self.conn = connect()
+
+    def insert(self, user, auction, amount, created_at):
+        # Straight into the store: place_bid refuses an equal amount, old data may hold ties.
+        cur = self.conn.execute(
+            "INSERT INTO bids (user_id, auction_id, amount, status, created_at) VALUES (?, ?, ?, 'active', ?)",
+            (user, auction, amount, created_at),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def top(self, auction):
+        row = highest_bid(self.conn, auction)
+        return None if row is None else (row["id"], row["amount"])
+
+    def standing(self, user, bid):
+        items = list_my_bids(self.conn, user, limit=100)["items"]
+        return next(item["standing"] for item in items if item["id"] == bid)
+
+    def test_cancel_highest_restores_previous_price(self):
+        others = place_bid(self.conn, 5, 7, 100, PLACED)
+        mine = place_bid(self.conn, 42, 7, 500, PLACED)
+        self.assertEqual(cancel_bid(self.conn, mine, 42, PLACED), 7)
+        self.assertEqual(minimum_bid(self.conn, 7), {"auction_id": 7, "highest": 100, "step": 10, "minimum_bid": 110})
+        self.assertEqual(self.top(7), (others, 100))
+        self.assertEqual(self.standing(5, others), "winning")
+
+    def test_cancel_across_step_threshold_uses_new_step(self):
+        place_bid(self.conn, 5, 7, 1000, PLACED)
+        mine = place_bid(self.conn, 42, 7, 1500, PLACED)
+        self.assertEqual(minimum_bid(self.conn, 7)["step"], 50)
+        cancel_bid(self.conn, mine, 42, PLACED)
+        self.assertEqual(minimum_bid(self.conn, 7), {"auction_id": 7, "highest": 1000, "step": 50, "minimum_bid": 1050})
+
+    def test_cancel_drops_step_back_below_1000(self):
+        place_bid(self.conn, 5, 13, 990, PLACED)
+        mine = place_bid(self.conn, 42, 13, 1000, PLACED)
+        self.assertEqual(minimum_bid(self.conn, 13)["minimum_bid"], 1050)
+        cancel_bid(self.conn, mine, 42, PLACED)
+        self.assertEqual(minimum_bid(self.conn, 13), {"auction_id": 13, "highest": 990, "step": 10, "minimum_bid": 1000})
+
+    def test_cancel_tied_later_bid_keeps_earlier_highest(self):
+        first = self.insert(5, 7, 200, PLACED)
+        later = self.insert(42, 7, 200, PLACED + 1)
+        self.assertEqual(self.top(7), (first, 200))
+        cancel_bid(self.conn, later, 42, PLACED + 1)
+        self.assertEqual(self.top(7), (first, 200))
+        self.assertEqual(minimum_bid(self.conn, 7)["minimum_bid"], 210)
+
+    def test_cancel_tie_winner_passes_highest_to_other(self):
+        mine = self.insert(42, 7, 200, PLACED)
+        other = self.insert(5, 7, 200, PLACED + 1)
+        self.assertEqual(self.top(7), (mine, 200))
+        cancel_bid(self.conn, mine, 42, PLACED + 1)
+        self.assertEqual(self.top(7), (other, 200))
+        self.assertEqual(self.standing(5, other), "winning")
+        self.assertEqual(minimum_bid(self.conn, 7)["minimum_bid"], 210)
+
+    def test_same_amount_as_cancelled_bid_is_accepted(self):
+        first = place_bid(self.conn, 42, 7, 500, PLACED)
+        cancel_bid(self.conn, first, 42, PLACED)
+        again = place_bid(self.conn, 42, 7, 500, PLACED + 1000)
+        self.assertEqual(self.top(7), (again, 500))
+
+    def test_all_bids_cancelled_leaves_no_highest(self):
+        base = place_bid(self.conn, 5, 7, 100, PLACED)
+        mid = place_bid(self.conn, 42, 7, 200, PLACED)
+        top = place_bid(self.conn, 42, 7, 300, PLACED)
+        cancel_bid(self.conn, top, 42, PLACED)
+        self.assertEqual(self.top(7), (mid, 200))
+        cancel_bid(self.conn, mid, 42, PLACED)
+        self.assertEqual(self.top(7), (base, 100))
+        cancel_bid(self.conn, base, 5, PLACED)
+        self.assertIsNone(highest_bid(self.conn, 7))
+        self.assertEqual(minimum_bid(self.conn, 7), {"auction_id": 7, "highest": None, "step": None, "minimum_bid": 1})
 
 
 if __name__ == "__main__":
