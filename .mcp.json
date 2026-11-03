@@ -14,7 +14,7 @@
         "/c",
         "npx",
         "-y",
-        "@playwright/mcp@latest"
+        "@playwright/mcp@0.0.84"
       ],
       "env": {}
     }
