@@ -1,0 +1,19 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: recapz
+      POSTGRES_PASSWORD: recapz
+      POSTGRES_DB: recapz
+    ports:
+      - "5432:5432"
+    volumes:
+      - recapz_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recapz -d recapz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  recapz_pgdata:
