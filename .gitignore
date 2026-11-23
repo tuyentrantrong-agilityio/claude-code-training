@@ -1,11 +1,18 @@
+.env
 __pycache__/
 *.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+node_modules/
+dist/
+coverage/
+.DS_Store
+
 .claude/scheduled_tasks.lock
 .claude/worktrees/
 .playwright-mcp/
-
-# The client agent's hidden notes stay out of git until the reveal stage moves them.
 .kickoff-private/
-
-# Reviewer agent workspace (diff, context, findings) from scripts/review_context.py.
 .review/
+.claude/settings.local.json
