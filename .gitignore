@@ -16,3 +16,6 @@ coverage/
 .kickoff-private/
 .review/
 .claude/settings.local.json
+
+# Local recordings from the storage backend
+data/
