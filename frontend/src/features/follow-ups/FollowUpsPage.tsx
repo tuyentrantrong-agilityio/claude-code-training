@@ -1,3 +1,7 @@
+import { PlaceholderPage } from '../../components/PlaceholderPage';
+
 export default function FollowUpsPage() {
-  return <h1 className="text-2xl font-semibold">Follow-ups</h1>;
+  return (
+    <PlaceholderPage title="Follow-ups" subtitle="What needs doing, and what Recapz suggests" />
+  );
 }

@@ -1,1 +1,96 @@
 @import 'tailwindcss';
+
+/* Design tokens: light by default, dark follows the OS setting. */
+@theme {
+  --color-bg: #f5f5fa;
+  --color-surface: #ffffff;
+  --color-sunken: #eeeef6;
+  --color-ink: #1b1b2f;
+  --color-muted: #66667f;
+  --color-line: #e2e2ee;
+  --color-accent: #4b4fd8;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #e9e9fc;
+  --color-accent-line: #c9caf5;
+  --color-ok: #1c7c54;
+  --color-ok-bg: #ddf3e8;
+  --color-warn: #9a6212;
+  --color-warn-bg: #fbefd5;
+  --color-bad: #b8344a;
+  --color-bad-bg: #fbe3e7;
+  --color-mark: #fbe08a;
+  --color-mark-ink: #3a2c00;
+  --color-tone0-bg: #e1e2fb;
+  --color-tone0-fg: #3a3db0;
+  --color-tone1-bg: #d4f1ea;
+  --color-tone1-fg: #17695a;
+  --color-tone2-bg: #fbe9c9;
+  --color-tone2-fg: #845411;
+  --color-tone3-bg: #fadde3;
+  --color-tone3-fg: #a02e45;
+  --color-tone4-bg: #e4e8d3;
+  --color-tone4-fg: #516025;
+  --font-sans: 'Hanken Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, Consolas, monospace;
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --shadow-card: 0 1px 2px rgb(27 27 47 / 0.05);
+  --shadow-pop: 0 8px 30px rgb(27 27 47 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-bg: #12121c;
+    --color-surface: #1b1b29;
+    --color-sunken: #151522;
+    --color-ink: #e9e9f6;
+    --color-muted: #9a9ab5;
+    --color-line: #2d2d42;
+    --color-accent: #8b8ef5;
+    --color-accent-ink: #12122a;
+    --color-accent-soft: #25264a;
+    --color-accent-line: #3c3e7a;
+    --color-ok: #5dd3a0;
+    --color-ok-bg: #163428;
+    --color-warn: #e8b45c;
+    --color-warn-bg: #3a2d12;
+    --color-bad: #f08196;
+    --color-bad-bg: #3e1d26;
+    --color-mark: #7a6410;
+    --color-mark-ink: #fff1c2;
+    --color-tone0-bg: #2a2b5e;
+    --color-tone0-fg: #b9bbfa;
+    --color-tone1-bg: #163a33;
+    --color-tone1-fg: #8adbc8;
+    --color-tone2-bg: #443214;
+    --color-tone2-fg: #f0c47a;
+    --color-tone3-bg: #4a2230;
+    --color-tone3-fg: #f4a3b4;
+    --color-tone4-bg: #2e3519;
+    --color-tone4-fg: #c2d27f;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+    --shadow-pop: 0 8px 30px rgb(0 0 0 / 0.45);
+  }
+}
+
+@layer base {
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font: 15px/1.55 var(--font-sans);
+  }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
