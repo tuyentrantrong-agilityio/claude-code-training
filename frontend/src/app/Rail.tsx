@@ -2,13 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Icon, type IconName } from '../components/Icon';
-import type { Role, SessionOrg, SessionUser } from './session';
+import type { Role } from './useMe';
 
 interface RailProps {
-  user: SessionUser;
-  org: SessionOrg;
+  user: { name: string; email: string };
+  org: { name: string };
   role: Role;
   followUpCount?: number;
+  canPreview?: boolean;
   onToggleRole: () => void;
   onSignOut?: () => void;
 }
@@ -53,9 +54,10 @@ function Heading({ children }: { children: ReactNode }) {
 function OrgSwitcher({
   org,
   role,
+  canPreview,
   onToggleRole,
   onSignOut,
-}: Pick<RailProps, 'org' | 'role' | 'onToggleRole' | 'onSignOut'>) {
+}: Pick<RailProps, 'org' | 'role' | 'onToggleRole' | 'onSignOut'> & { canPreview: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -100,18 +102,20 @@ function OrgSwitcher({
           role="menu"
           className="absolute top-[calc(100%+6px)] right-0 left-0 z-30 flex min-w-[210px] flex-col rounded-xl border border-line bg-surface p-1.5 shadow-pop"
         >
-          <button
-            type="button"
-            role="menuitem"
-            className={itemClass}
-            onClick={() => {
-              onToggleRole();
-              setOpen(false);
-            }}
-          >
-            <Icon name="shield" />
-            Preview as {other}
-          </button>
+          {canPreview && (
+            <button
+              type="button"
+              role="menuitem"
+              className={itemClass}
+              onClick={() => {
+                onToggleRole();
+                setOpen(false);
+              }}
+            >
+              <Icon name="shield" />
+              Preview as {other}
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -130,10 +134,24 @@ function OrgSwitcher({
   );
 }
 
-export function Rail({ user, org, role, followUpCount = 0, onToggleRole, onSignOut }: RailProps) {
+export function Rail({
+  user,
+  org,
+  role,
+  followUpCount = 0,
+  canPreview = true,
+  onToggleRole,
+  onSignOut,
+}: RailProps) {
   return (
     <aside className="sticky top-0 flex h-screen flex-col gap-0.5 overflow-x-hidden overflow-y-auto border-r border-line bg-surface px-3 py-3.5 max-[860px]:static max-[860px]:h-auto max-[860px]:border-r-0 max-[860px]:border-b">
-      <OrgSwitcher org={org} role={role} onToggleRole={onToggleRole} onSignOut={onSignOut} />
+      <OrgSwitcher
+        org={org}
+        role={role}
+        canPreview={canPreview}
+        onToggleRole={onToggleRole}
+        onSignOut={onSignOut}
+      />
       <nav aria-label="Main" className="flex flex-1 flex-col gap-0.5">
         <Item to="/home" icon="home" label="Home" />
         <Item to="/meetings" icon="video" label="Meetings" />
