@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     worker_poll_interval_seconds: float = 2.0
     job_max_attempts: int = 3
     job_stale_after_seconds: int = 600
+    provider_stt_batch: str = "fake"
+    provider_stt_stream: str = "fake"
+    provider_llm: str = "fake"
+    provider_embedding: str = "fake"
+    provider_tts: str = "fake"
+    provider_timeout_seconds: float = 60
+    provider_max_retries: int = 2
 
 
 @lru_cache
