@@ -1,3 +1,10 @@
+import { PlaceholderPage } from '../../components/PlaceholderPage';
+
 export default function AskPage() {
-  return <h1 className="text-2xl font-semibold">Ask</h1>;
+  return (
+    <PlaceholderPage
+      title="Ask"
+      subtitle="Ask across all your meetings. Every answer points to the moment it came from."
+    />
+  );
 }

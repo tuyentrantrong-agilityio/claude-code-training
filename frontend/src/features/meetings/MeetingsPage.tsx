@@ -1,3 +1,5 @@
+import { PlaceholderPage } from '../../components/PlaceholderPage';
+
 export default function MeetingsPage() {
-  return <h1 className="text-2xl font-semibold">Meetings</h1>;
+  return <PlaceholderPage title="Meetings" subtitle="Every recorded meeting" />;
 }
