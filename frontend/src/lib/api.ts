@@ -20,6 +20,25 @@ export function setCsrfToken(token: string | null) {
   csrfToken = token;
 }
 
+export function getCsrfToken(): string | null {
+  return csrfToken;
+}
+
+/** Build an ApiError from a status and a parsed (or missing) error body. */
+export function apiErrorFrom(status: number, body: unknown): ApiError {
+  let code = 'unknown_error';
+  let message = `Request failed (${status})`;
+  let details: unknown = {};
+  const error = (body as { error?: { code?: string; message?: string; details?: unknown } } | null)
+    ?.error;
+  if (error) {
+    code = error.code ?? code;
+    message = error.message ?? message;
+    details = error.details ?? details;
+  }
+  return new ApiError(status, code, message, details);
+}
+
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -39,22 +58,13 @@ export async function api<T = void>(path: string, options: ApiOptions = {}): Pro
   });
 
   if (!response.ok) {
-    let code = 'unknown_error';
-    let message = `Request failed (${response.status})`;
-    let details: unknown = {};
+    let body: unknown = null;
     try {
-      const data = (await response.json()) as {
-        error?: { code?: string; message?: string; details?: unknown };
-      };
-      if (data.error) {
-        code = data.error.code ?? code;
-        message = data.error.message ?? message;
-        details = data.error.details ?? details;
-      }
+      body = await response.json();
     } catch {
       // Body was not JSON; keep the defaults.
     }
-    throw new ApiError(response.status, code, message, details);
+    throw apiErrorFrom(response.status, body);
   }
 
   if (response.status === 204) return undefined as T;

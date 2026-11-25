@@ -21,7 +21,7 @@ const starts: { to: string; icon: IconName; title: string; text: string; tone: s
     tone: 'bg-tone1-bg text-tone1-fg',
   },
   {
-    to: '/meetings',
+    to: '/meetings?upload=1',
     icon: 'up',
     title: 'Upload a recording',
     text: 'Try it on a file you already have.',

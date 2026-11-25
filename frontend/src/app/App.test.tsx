@@ -46,7 +46,7 @@ describe('routing', () => {
     );
     expect(screen.getByRole('link', { name: /Upload a recording/ })).toHaveAttribute(
       'href',
-      '/meetings',
+      '/meetings?upload=1',
     );
   });
 
