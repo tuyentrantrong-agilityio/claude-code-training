@@ -24,6 +24,7 @@ from app.providers.types import (
     EmbeddingResult,
     LlmResult,
     SpeechAudio,
+    TokenUsage,
     Transcript,
     Usage,
 )
@@ -86,6 +87,23 @@ class _Metered[P: _Named]:
 
 
 class MeteredBatchStt(_Metered[BatchSttProvider]):
+    def __init__(
+        self,
+        provider: BatchSttProvider,
+        session: AsyncSession,
+        meeting_id: uuid.UUID | None,
+        *,
+        timeout: float | None = None,
+        max_retries: int | None = None,
+        sleep: Sleep = asyncio.sleep,
+    ) -> None:
+        # Uploads of long recordings need the longer STT timeout, not the generic one.
+        if timeout is None:
+            timeout = get_settings().stt_timeout_seconds
+        super().__init__(
+            provider, session, meeting_id, timeout=timeout, max_retries=max_retries, sleep=sleep
+        )
+
     async def transcribe(self, audio_path: Path, language: str) -> Transcript:
         result = await self._call(lambda: self._provider.transcribe(audio_path, language))
         seconds = Decimal(result.duration_ms) / Decimal(1000)
@@ -113,8 +131,9 @@ class MeteredLlm(_Metered[LlmProvider]):
         """Stream pieces of the answer; the timeout covers the whole stream.
 
         A stream is not retried (the caller may already have sent part of it), so a
-        failure is raised as it is. Token usage is estimated as words in the prompt and in
-        the streamed text and recorded once the stream has finished without error.
+        failure is raised as it is. Token usage comes from the adapter's `last_usage` when it
+        has one; otherwise it is estimated as words in the prompt and in the streamed text.
+        It is recorded once the stream has finished without error.
         """
         iterator = self._provider.stream(messages, max_tokens=max_tokens).__aiter__()
         loop = asyncio.get_running_loop()
@@ -136,12 +155,16 @@ class MeteredLlm(_Metered[LlmProvider]):
             if close is not None:
                 await close()
         name = self._provider_name
-        words_in = sum(len(m.content.split()) for m in messages)
-        words_out = len("".join(parts).split())
+        reported = getattr(self._provider, "last_usage", None)
+        if isinstance(reported, TokenUsage):
+            tokens_in, tokens_out = reported.input_tokens, reported.output_tokens
+        else:
+            tokens_in = sum(len(m.content.split()) for m in messages)
+            tokens_out = len("".join(parts).split())
         await self._record(
             [
-                Usage("llm", name, Decimal(words_in), "input_tokens"),
-                Usage("llm", name, Decimal(words_out), "output_tokens"),
+                Usage("llm", name, Decimal(tokens_in), "input_tokens"),
+                Usage("llm", name, Decimal(tokens_out), "output_tokens"),
             ]
         )
 

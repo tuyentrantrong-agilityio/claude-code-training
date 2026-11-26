@@ -5,6 +5,7 @@ from typing import Literal, cast
 
 from app.core.settings import get_settings
 from app.providers import fakes
+from app.providers.anthropic import AnthropicLlm
 from app.providers.base import (
     BatchSttProvider,
     EmbeddingProvider,
@@ -12,6 +13,8 @@ from app.providers.base import (
     StreamingSttProvider,
     TtsProvider,
 )
+from app.providers.deepgram import DeepgramBatchStt
+from app.providers.openai_embeddings import OpenAiEmbedding
 
 Function = Literal["stt_batch", "stt_stream", "llm", "embedding", "tts"]
 
@@ -53,3 +56,31 @@ def get_embedding() -> EmbeddingProvider:
 
 def get_tts() -> TtsProvider:
     return cast(TtsProvider, _build("tts", get_settings().provider_tts))
+
+
+def _require_key(env_choice: str, key_env: str, value: str) -> None:
+    if not value:
+        raise ValueError(f"{env_choice} needs {key_env}")
+
+
+def _deepgram() -> DeepgramBatchStt:
+    settings = get_settings()
+    _require_key("PROVIDER_STT_BATCH=deepgram", "DEEPGRAM_API_KEY", settings.deepgram_api_key)
+    return DeepgramBatchStt(settings)
+
+
+def _anthropic() -> AnthropicLlm:
+    settings = get_settings()
+    _require_key("PROVIDER_LLM=anthropic", "ANTHROPIC_API_KEY", settings.anthropic_api_key)
+    return AnthropicLlm(settings)
+
+
+def _openai() -> OpenAiEmbedding:
+    settings = get_settings()
+    _require_key("PROVIDER_EMBEDDING=openai", "OPENAI_API_KEY", settings.openai_api_key)
+    return OpenAiEmbedding(settings)
+
+
+register_provider("stt_batch", "deepgram", _deepgram)
+register_provider("llm", "anthropic", _anthropic)
+register_provider("embedding", "openai", _openai)

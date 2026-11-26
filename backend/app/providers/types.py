@@ -38,6 +38,14 @@ class LlmResult:
     output_tokens: int
 
 
+@dataclass(frozen=True)
+class TokenUsage:
+    """Real token counts reported by a provider (for example after a stream)."""
+
+    input_tokens: int
+    output_tokens: int
+
+
 Embedding = list[float]
 
 

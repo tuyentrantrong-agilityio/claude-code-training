@@ -53,6 +53,9 @@ class LlmProvider(Protocol):
 
     def stream(self, messages: list[ChatMessage], *, max_tokens: int) -> AsyncIterator[str]: ...
 
+    # Optional: adapters that learn real token counts while streaming may also expose
+    # `last_usage: TokenUsage | None`; MeteredLlm.stream reads it when present.
+
 
 @runtime_checkable
 class EmbeddingProvider(Protocol):
