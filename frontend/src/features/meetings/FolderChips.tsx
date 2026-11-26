@@ -7,11 +7,12 @@ interface FolderChipsProps {
   chips: FolderChip[];
   selected: string;
   onSelect: (id: string) => void;
+  label?: string;
 }
 
-export function FolderChips({ chips, selected, onSelect }: FolderChipsProps) {
+export function FolderChips({ chips, selected, onSelect, label = 'Folders' }: FolderChipsProps) {
   return (
-    <div role="group" aria-label="Folders" className="flex flex-wrap gap-2">
+    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
       {chips.map((chip) => {
         const on = chip.id === selected;
         return (

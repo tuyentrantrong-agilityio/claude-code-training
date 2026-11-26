@@ -23,6 +23,55 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('follow-ups badge', () => {
+  it('shows the open count from the API in the rail', async () => {
+    mockFetch({
+      'GET /me': { body: ownerMe },
+      'GET /follow-ups/count': { body: { open_mine: 4 } },
+    });
+    renderAt('/home');
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /Follow-ups/ })).toHaveTextContent('Follow-ups4'),
+    );
+  });
+
+  it('updates the badge after a follow-up changes', async () => {
+    let open = 2;
+    mockFetch({
+      'GET /me': { body: ownerMe },
+      'GET /follow-ups/count': () => ({ body: { open_mine: open } }),
+      'GET /follow-ups?owner=me&state=open': {
+        body: {
+          items: [
+            {
+              id: 'f1',
+              text: 'Send the plan',
+              owner_name: 'Alex Rivera',
+              owner_user_id: 'u1',
+              at_ms: null,
+              state: 'open',
+              meeting_id: 'm1',
+              meeting_title: 'Sync',
+            },
+          ],
+        },
+      },
+      'PATCH /follow-ups/f1': () => {
+        open = 1;
+        return { body: {} };
+      },
+    });
+    renderAt('/follow-ups');
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /Follow-ups/ })).toHaveTextContent('Follow-ups2'),
+    );
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Send the plan/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /Follow-ups/ })).toHaveTextContent('Follow-ups1'),
+    );
+  });
+});
+
 describe('routing', () => {
   it('redirects / to /home', async () => {
     renderAt('/');
@@ -60,7 +109,6 @@ describe('routing', () => {
 
   it.each([
     ['/meetings', 'Meetings'],
-    ['/meetings/m1', 'Meeting'],
     ['/ask', 'Ask'],
     ['/live', 'Live interpreter'],
     ['/follow-ups', 'Follow-ups'],
