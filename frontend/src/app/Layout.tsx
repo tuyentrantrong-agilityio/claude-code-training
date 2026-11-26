@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { getFollowUpCount } from '../features/follow-ups/api';
+import { FollowUpCountContext } from './followUpCount';
 import { Rail } from './Rail';
 import { useMe, type Role } from './useMe';
 
@@ -12,6 +14,30 @@ export default function Layout() {
   const navigate = useNavigate();
   // Preview role is local state only; null means "use the real role".
   const [preview, setPreview] = useState<Role | null>(null);
+  const [followUpCount, setFollowUpCount] = useState(0);
+
+  const refreshCount = useCallback(() => {
+    getFollowUpCount()
+      .then((res) => setFollowUpCount(res.open_mine))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getFollowUpCount()
+      .then((res) => {
+        if (!cancelled) setFollowUpCount(res.open_mine);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const countValue = useMemo(
+    () => ({ count: followUpCount, refresh: refreshCount }),
+    [followUpCount, refreshCount],
+  );
   if (!me) return null;
 
   const realRole = me.role;
@@ -29,13 +55,15 @@ export default function Layout() {
         user={me.user}
         org={me.organization}
         role={role}
-        followUpCount={0}
+        followUpCount={followUpCount}
         canPreview={realRole === 'owner'}
         onToggleRole={() => setPreview(role === 'owner' ? 'member' : 'owner')}
         onSignOut={() => void onSignOut()}
       />
       <main className="flex w-full max-w-[1160px] min-w-0 flex-col gap-[22px] px-6 pt-[30px] pb-[72px] pl-8 max-[860px]:px-4 max-[860px]:pt-5">
-        <Outlet context={context} />
+        <FollowUpCountContext.Provider value={countValue}>
+          <Outlet context={context} />
+        </FollowUpCountContext.Provider>
       </main>
     </div>
   );

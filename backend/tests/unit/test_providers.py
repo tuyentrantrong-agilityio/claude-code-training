@@ -96,8 +96,11 @@ async def test_batch_stt_reads_sidecar(tmp_path: Path) -> None:
 async def test_batch_stt_without_sidecar(tmp_path: Path) -> None:
     result = await FakeBatchStt().transcribe(tmp_path / "standup.mp3", "vi")
     assert result.language == "vi"
-    assert len(result.segments) == 2
+    # The default demo script has 8 segments and 3 speakers (was 2 segments).
+    assert len(result.segments) == 8
+    assert len({s.speaker_label for s in result.segments}) == 3
     assert "standup" in result.segments[0].text
+    assert result.duration_ms == 60_000 and result.segments[-1].end_ms <= 60_000
 
 
 async def test_streaming_stt_one_segment_per_chunk() -> None:

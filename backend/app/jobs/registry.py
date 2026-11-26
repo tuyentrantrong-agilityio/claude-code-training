@@ -19,6 +19,12 @@ class JobContext:
     job_id: uuid.UUID
     meeting_id: uuid.UUID | None
     session_factory: SessionFactory
+    attempts: int = 1  # includes the current run
+    max_attempts: int = 1
+
+    @property
+    def is_last_attempt(self) -> bool:
+        return self.attempts >= self.max_attempts
 
 
 Handler = Callable[[JobContext], Awaitable[None]]

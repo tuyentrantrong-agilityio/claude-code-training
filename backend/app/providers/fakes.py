@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import Any
 
 from app.providers.base import ProviderError
+from app.providers.demo_script import ACTION_RE, SCRIPT, SCRIPT_SPEAKERS
 from app.providers.types import (
+    RECAP_MARKER,
     ChatMessage,
     EmbeddingResult,
     LlmResult,
@@ -20,8 +22,9 @@ from app.providers.types import (
     TranscriptSegment,
 )
 
-RECAP_MARKER = "RECAP_JSON"
 _AT_MS_RE = re.compile(r"\[at_ms=(\d+)\]")
+_LINE_RE = re.compile(r"^\[at_ms=(\d+)\] ([^:\n]+): (.+)$", re.MULTILINE)
+DEFAULT_DURATION_MS = 60_000
 
 
 class _Failing:
@@ -44,6 +47,31 @@ def _words(text: str) -> int:
     return len(text.split())
 
 
+def _audio_duration_ms(path: Path) -> int:
+    """Duration of a WAV file in ms; the default when it cannot be read."""
+    try:
+        with wave.open(str(path), "rb") as wav:
+            rate = wav.getframerate()
+            ms = wav.getnframes() * 1000 // rate if rate else 0
+    except (OSError, EOFError, wave.Error):
+        return DEFAULT_DURATION_MS
+    return ms if ms > 0 else DEFAULT_DURATION_MS
+
+
+def _demo_segments(stem: str, language: str, duration_ms: int) -> list[TranscriptSegment]:
+    lines = SCRIPT["vi" if language == "vi" else "en"]
+    slot = max(duration_ms // len(lines), 2)
+    return [
+        TranscriptSegment(
+            i * slot,
+            i * slot + max(slot * 9 // 10, 1),
+            f"Speaker {SCRIPT_SPEAKERS[i]}",
+            line.format(stem=stem),
+        )
+        for i, line in enumerate(lines)
+    ]
+
+
 class FakeBatchStt(_Failing):
     async def transcribe(self, audio_path: Path, language: str) -> Transcript:
         self._maybe_fail()
@@ -63,14 +91,11 @@ class FakeBatchStt(_Failing):
                     for s in data["segments"]
                 ],
             )
-        stem = audio_path.stem
+        duration_ms = _audio_duration_ms(audio_path)
         return Transcript(
             language=language,
-            duration_ms=10_000,
-            segments=[
-                TranscriptSegment(0, 5_000, "Speaker 1", f"Opening remarks for {stem}."),
-                TranscriptSegment(5_000, 10_000, "Speaker 2", f"Closing remarks for {stem}."),
-            ],
+            duration_ms=duration_ms,
+            segments=_demo_segments(audio_path.stem, language, duration_ms),
         )
 
 
@@ -90,7 +115,42 @@ class FakeStreamingStt(_Failing):
             index += 1
 
 
+def _first_words(text: str, count: int = 5) -> str:
+    return " ".join(text.split()[:count]).rstrip(".,?!")
+
+
+def _derived_recap(lines: list[tuple[int, str, str]]) -> dict[str, Any]:
+    """Recap built from "[at_ms=N] Speaker: text" lines, so demos show real content."""
+    speakers = list(dict.fromkeys(name for _, name, _ in lines))
+    asked = [(at, text) for at, _, text in lines if text.rstrip().endswith("?")]
+    longest = sorted(lines, key=lambda line: len(line[2]), reverse=True)[:2]
+    step = max(len(lines) // 3, 1)
+    return {
+        "summary": (
+            f"{len(speakers)} speakers discussed {_first_words(lines[0][2], 8).lower()} "
+            f"and agreed on next steps."
+        ),
+        "follow_ups": [
+            {"text": text, "owner": name, "at_ms": at}
+            for at, name, text in lines
+            if ACTION_RE.search(text)
+        ],
+        "key_points": [
+            {"title": _first_words(text), "text": text, "at_ms": at} for at, _, text in lines[1:4]
+        ],
+        "chapters": [
+            {"title": _first_words(lines[i][2], 4), "at_ms": lines[i][0]}
+            for i in range(0, len(lines), step)
+        ][:3],
+        "highlights": [{"text": text, "at_ms": at} for at, _, text in sorted(longest)],
+        "questions": [{"text": text, "at_ms": at} for at, text in asked[:2]],
+    }
+
+
 def _recap_json(prompt: str) -> str:
+    lines = [(int(a), n.strip(), t.strip()) for a, n, t in _LINE_RE.findall(prompt)]
+    if lines:
+        return json.dumps(_derived_recap(lines))
     stamps = [int(m) for m in _AT_MS_RE.findall(prompt)]
 
     def at(i: int) -> int | None:
