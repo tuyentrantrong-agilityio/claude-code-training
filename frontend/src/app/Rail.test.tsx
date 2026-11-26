@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Rail } from './Rail';
-import type { Role } from './session';
+import type { Role } from './useMe';
 
 function renderRail(role: Role, followUpCount = 0, path = '/home') {
   const onToggleRole = vi.fn();
@@ -67,6 +67,23 @@ describe('Rail', () => {
     renderRail('owner', 0);
     const link = screen.getByRole('link', { name: 'Follow-ups' });
     expect(link.textContent).toBe('Follow-ups');
+  });
+
+  it('hides the role preview item when previewing is not allowed', () => {
+    render(
+      <MemoryRouter>
+        <Rail
+          user={{ name: 'Sam', email: 'sam@example.com' }}
+          org={{ name: 'Northwind Studio' }}
+          role="member"
+          canPreview={false}
+          onToggleRole={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Northwind Studio/ }));
+    expect(screen.queryByRole('menuitem', { name: /Preview as/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
   });
 
   it('shows the user name and email in the footer', () => {

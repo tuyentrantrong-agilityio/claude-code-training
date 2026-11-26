@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { placeholderUser } from '../../app/session';
+import { useMe } from '../../app/useMe';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon, type IconName } from '../../components/Icon';
 import { PageHeader } from '../../components/PageHeader';
@@ -30,8 +30,9 @@ const starts: { to: string; icon: IconName; title: string; text: string; tone: s
 ];
 
 export default function HomePage() {
+  const { me } = useMe();
   const now = new Date();
-  const first = placeholderUser.name.split(' ')[0];
+  const first = (me?.user.name ?? '').split(' ')[0];
   return (
     <>
       <PageHeader title={`${greeting(now)}, ${first}`} subtitle={fmtDay(now)} />
