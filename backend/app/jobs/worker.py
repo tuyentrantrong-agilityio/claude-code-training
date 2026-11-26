@@ -14,8 +14,14 @@ from sqlalchemy import select
 from app.core.settings import get_settings
 from app.db.models.public import Organization
 from app.db.session import get_engine, get_sessionmaker, tenant_session
+from app.jobs import handlers as _handlers  # noqa: F401  (registers the job handlers)
 from app.jobs import queue
-from app.jobs.registry import JobContext, UnknownJobKindError, dispatch
+from app.jobs.registry import (
+    JobContext,
+    NonRetryableJobError,
+    UnknownJobKindError,
+    dispatch,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +90,9 @@ class Worker:
         except UnknownJobKindError as exc:
             logger.error("job %s kind=%s schema=%s: %s", job_id, kind, schema, exc)
             error, max_attempts = str(exc), 0
+        except NonRetryableJobError as exc:
+            logger.error("job %s kind=%s schema=%s failed for good: %s", job_id, kind, schema, exc)
+            error, max_attempts = f"{type(exc).__name__}: {exc}", 0
         except Exception as exc:
             logger.exception("job %s kind=%s schema=%s failed", job_id, kind, schema)
             error = f"{type(exc).__name__}: {exc}"

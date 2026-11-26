@@ -30,6 +30,19 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     session_ttl_days: int = 14
     invite_ttl_days: int = 7
+    storage_dir: str = "./data/recordings"
+    max_upload_mb: float = 500
+    allowed_upload_extensions: str = "mp3,m4a,wav,mp4,webm,ogg,mov"
+    ffmpeg_path: str = "ffmpeg"
+    ffprobe_path: str = "ffprobe"
+    decode_timeout_seconds: float = 1800
+    sse_poll_interval_seconds: float = 1.0
+    sse_max_seconds: float = 600
+
+    @property
+    def upload_extensions(self) -> frozenset[str]:
+        parts = (p.strip().lower().lstrip(".") for p in self.allowed_upload_extensions.split(","))
+        return frozenset(p for p in parts if p)
 
     @model_validator(mode="after")
     def _require_secret_key(self) -> Self:

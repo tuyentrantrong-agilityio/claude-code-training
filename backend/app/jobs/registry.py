@@ -32,6 +32,10 @@ class UnknownJobKindError(Exception):
         self.kind = kind
 
 
+class NonRetryableJobError(Exception):
+    """Raised by a handler when trying again cannot help; the job fails at once."""
+
+
 def handler(kind: str) -> Callable[[Handler], Handler]:
     def register(fn: Handler) -> Handler:
         HANDLERS[kind] = fn
@@ -52,4 +56,12 @@ async def cleanup(ctx: JobContext) -> None:
     logger.info("cleanup job %s in %s: nothing to do", ctx.job_id, ctx.schema_name)
 
 
-__all__ = ["HANDLERS", "Handler", "JobContext", "UnknownJobKindError", "dispatch", "handler"]
+__all__ = [
+    "HANDLERS",
+    "Handler",
+    "JobContext",
+    "NonRetryableJobError",
+    "UnknownJobKindError",
+    "dispatch",
+    "handler",
+]
