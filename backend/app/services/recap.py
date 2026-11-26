@@ -228,7 +228,7 @@ async def clear_recap(session: AsyncSession, meeting_id: uuid.UUID) -> None:
 async def replace_recap(
     session: AsyncSession, meeting: Meeting, recap: Recap, members: list[Member]
 ) -> None:
-    """Write the recap in the caller's transaction and mark the meeting ready.
+    """Write the recap in the caller's transaction and move the meeting to the "filing" stage.
 
     The summary is only set when the user has not edited it. Follow-ups the user already
     marked done are kept; a new follow-up with the same text as a kept one is not added.
@@ -277,5 +277,5 @@ async def replace_recap(
                 created_at=base + timedelta(microseconds=seq),  # keeps the recap order
             )
         )
-    meeting.stage, meeting.status, meeting.error = None, "ready", None
+    meeting.stage, meeting.status, meeting.error = "filing", "processing", None
     await session.flush()

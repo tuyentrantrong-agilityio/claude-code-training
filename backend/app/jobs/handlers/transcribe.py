@@ -18,6 +18,7 @@ from app.jobs.registry import JobContext, NonRetryableJobError, handler
 from app.providers.metering import MeteredBatchStt
 from app.providers.registry import get_batch_stt
 from app.providers.types import Transcript
+from app.services.indexing import delete_chunks
 from app.services.recap import NO_SPEECH_SUMMARY, clear_recap
 from app.storage import get_storage
 
@@ -113,6 +114,7 @@ async def transcribe(ctx: JobContext) -> None:
             await queue.enqueue(session, "recap", meeting_id)
         else:
             await clear_recap(session, meeting_id)
+            await delete_chunks(session, meeting_id)
             if meeting.summary_edited_at is None:
                 meeting.summary = NO_SPEECH_SUMMARY
             meeting.stage, meeting.status = None, "ready"

@@ -1,5 +1,7 @@
 """Recap job: summary, follow-ups, key points, chapters, highlights and questions.
 
+When the recap is saved the meeting moves to the "filing" stage and an index job is queued.
+
 A reply that is not valid JSON is retried once (the model may answer differently); a second
 bad reply marks the meeting incomplete.
 """
@@ -11,6 +13,7 @@ from sqlalchemy import select
 from app.core.settings import get_settings
 from app.db.models.org import Meeting, MeetingParticipant, TranscriptSegment
 from app.db.models.public import Membership, Organization, User
+from app.jobs import queue
 from app.jobs.handlers.common import fail_meeting_on_error, mark_incomplete
 from app.jobs.registry import JobContext, NonRetryableJobError, handler
 from app.providers.metering import MeteredLlm
@@ -76,6 +79,7 @@ async def recap(ctx: JobContext) -> None:
         ]
         if not lines:
             await replace_recap(session, meeting, Recap(summary=NO_SPEECH_SUMMARY), members)
+            await queue.enqueue(session, "index", meeting_id)
             return
         llm = MeteredLlm(get_llm(), session, meeting_id)
         result = await llm.complete(
@@ -91,6 +95,7 @@ async def recap(ctx: JobContext) -> None:
             starts = [line.start_ms for line in lines]
             checked = validate_recap(parsed, starts, meeting.duration_ms)
             await replace_recap(session, meeting, checked, members)
+            await queue.enqueue(session, "index", meeting_id)
     if parse_error is not None:
         if ctx.attempts >= min(PARSE_ATTEMPTS, ctx.max_attempts):
             await mark_incomplete(ctx, RECAP_ERROR)

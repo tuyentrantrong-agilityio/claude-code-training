@@ -2,7 +2,7 @@
 
 import asyncio
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from decimal import Decimal
 from pathlib import Path
 from typing import Protocol
@@ -108,6 +108,42 @@ class MeteredLlm(_Metered[LlmProvider]):
             ]
         )
         return result
+
+    async def stream(self, messages: list[ChatMessage], *, max_tokens: int) -> AsyncIterator[str]:
+        """Stream pieces of the answer; the timeout covers the whole stream.
+
+        A stream is not retried (the caller may already have sent part of it), so a
+        failure is raised as it is. Token usage is estimated as words in the prompt and in
+        the streamed text and recorded once the stream has finished without error.
+        """
+        iterator = self._provider.stream(messages, max_tokens=max_tokens).__aiter__()
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self._timeout
+        parts: list[str] = []
+        try:
+            while True:
+                try:
+                    async with asyncio.timeout(max(deadline - loop.time(), 0)):
+                        piece = await anext(iterator)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError as exc:
+                    raise ProviderTimeout() from exc
+                parts.append(piece)
+                yield piece
+        finally:
+            close = getattr(iterator, "aclose", None)
+            if close is not None:
+                await close()
+        name = self._provider_name
+        words_in = sum(len(m.content.split()) for m in messages)
+        words_out = len("".join(parts).split())
+        await self._record(
+            [
+                Usage("llm", name, Decimal(words_in), "input_tokens"),
+                Usage("llm", name, Decimal(words_out), "output_tokens"),
+            ]
+        )
 
 
 class MeteredEmbedding(_Metered[EmbeddingProvider]):

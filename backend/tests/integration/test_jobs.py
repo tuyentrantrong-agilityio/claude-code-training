@@ -48,6 +48,7 @@ async def clean_jobs() -> None:
 @pytest.fixture
 def failing_handler() -> Iterator[list[int]]:
     calls: list[int] = []
+    original = HANDLERS.get("index")  # the real index handler must come back afterwards
 
     @handler("index")
     async def _boom(ctx: JobContext) -> None:
@@ -55,7 +56,10 @@ def failing_handler() -> Iterator[list[int]]:
         raise RuntimeError("boom")
 
     yield calls
-    HANDLERS.pop("index", None)
+    if original is None:
+        HANDLERS.pop("index", None)
+    else:
+        HANDLERS["index"] = original
 
 
 async def test_enqueue_dedups_active_job(two_orgs: tuple[str, str]) -> None:
@@ -144,7 +148,11 @@ async def test_failing_handler_retries_then_fails(
     assert await worker.run_once() == 0
 
 
-async def test_unknown_kind_fails_immediately(two_orgs: tuple[str, str]) -> None:
+async def test_unknown_kind_fails_immediately(
+    two_orgs: tuple[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Every allowed kind has a handler now, so take the index handler away for this test.
+    monkeypatch.delitem(HANDLERS, "index")
     schema = two_orgs[0]
     async with tenant_session(schema) as session:
         job_id = await queue.enqueue(session, "index")
