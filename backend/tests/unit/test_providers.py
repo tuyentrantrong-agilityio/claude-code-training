@@ -138,7 +138,7 @@ def test_registry_defaults_to_fakes() -> None:
 def test_registry_unknown_name(monkeypatch: pytest.MonkeyPatch) -> None:
     _set(monkeypatch, PROVIDER_LLM="nope")
     try:
-        with pytest.raises(ValueError, match=r"nope.*known: fake"):
+        with pytest.raises(ValueError, match=r"nope.*known: .*fake"):
             registry.get_llm()
     finally:
         monkeypatch.undo()

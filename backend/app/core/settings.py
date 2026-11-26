@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     provider_tts: str = "fake"
     provider_timeout_seconds: float = 60
     provider_max_retries: int = 2
+    stt_timeout_seconds: float = 600
+    deepgram_api_key: str = ""
+    anthropic_api_key: str = ""
+    openai_api_key: str = ""
+    deepgram_model: str = "nova-3"
+    anthropic_model: str = "claude-haiku-5-5"
+    openai_embedding_model: str = "text-embedding-3-small"
+    embedding_dimensions: int = 1536
     secret_key: str = ""
     google_client_id: str = ""
     google_client_secret: str = ""
