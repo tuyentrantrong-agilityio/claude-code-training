@@ -84,6 +84,79 @@ Meeting summary object (list item):
 }
 ```
 
+### Report endpoints
+
+All are scoped to the organization of the session; a meeting of another organization is
+`404 meeting_not_found`. `at_ms` values are the start of a transcript segment. Items without
+a time have `at_ms: null`.
+
+`GET /meetings/{id}/recap` (lists are ordered by seq, which follows `at_ms`; follow-ups by
+`at_ms`, items without a time last):
+
+```json
+{
+  "summary": "The team reviewed ...",
+  "summary_edited_at": null,
+  "follow_ups": [
+    {"id": "uuid", "text": "I will send the release note today.", "owner_name": "Speaker 3",
+     "owner_user_id": null, "at_ms": 3000, "state": "open"}
+  ],
+  "key_points": [{"id": "uuid", "title": "Release candidate is ready", "text": "...", "at_ms": 1000}],
+  "chapters": [{"id": "uuid", "title": "Release status", "at_ms": 0}],
+  "highlights": [{"id": "uuid", "text": "...", "at_ms": 2000}],
+  "questions": [{"id": "uuid", "text": "Can we ship it this week?", "at_ms": 2000}]
+}
+```
+
+`summary` is `null` until the recap exists. A summary the user edited
+(`summary_edited_at` set) is never replaced when the recap runs again. `owner_user_id` is the
+organization member whose name, or email before the `@`, equals `owner_name` ignoring case
+(only when exactly one member matches).
+
+`GET /meetings/{id}/transcript?q=` ordered by `seq`. `q` is a case-insensitive substring
+match on the text or the speaker name (`%` and `_` are literal); a blank `q` returns all.
+`speaker` is the participant display name (falls back to the speaker label, `null` when the
+segment has no participant).
+
+```json
+{"segments": [{"id": "uuid", "seq": 0, "start_ms": 0, "end_ms": 900,
+               "participant_id": "uuid", "speaker": "Speaker 1", "text": "Welcome ..."}]}
+```
+
+`GET /meetings/{id}/people` ordered by `talk_ms` descending. `talk_ms` is the sum of
+`end_ms - start_ms` over the participant's segments; `share` is `talk_ms` divided by the
+total of all participants (`0` when the total is 0).
+
+```json
+{"people": [{"participant_id": "uuid", "display_name": "Speaker 1",
+             "speaker_label": "Speaker 1", "talk_ms": 3600, "share": 0.5}]}
+```
+
+`PATCH /meetings/{id}/participants/{pid}` body `{"display_name": "Maya Chen"}` (trimmed,
+1 to 80 characters, otherwise `400 validation_error`; needs the CSRF header). Returns
+`{"participant_id": "uuid", "display_name": "Maya Chen", "speaker_label": "Speaker 1"}`.
+Unknown `pid` (or one of another meeting): `404 participant_not_found`.
+
+`GET /meetings/{id}/export/transcript.txt` is `text/plain; charset=utf-8` with
+`Content-Disposition: attachment; filename="<title-slug>-transcript.txt"`, one line per
+segment: `[mm:ss] Speaker: text` (minutes keep counting past 59). Unknown speaker is
+`Unknown`.
+
+`GET /meetings/{id}/export/recap.md` is `text/markdown; charset=utf-8`, attachment
+`<title-slug>-recap.md`. Layout: `# <title>`, `Date: YYYY-MM-DD` (UTC), `## Summary`,
+`## Follow-ups` (`- [ ] text (owner: Name) [mm:ss]`, `[x]` when done), `## Key points`
+(`- **Title** [mm:ss]: text`) and `## Chapters` (`- [mm:ss] Title`). Empty sections are left
+out. The slug is the lowercase ASCII title (accents removed, other characters `-`, at most
+60 characters, `meeting` when empty).
+
+Processing of an upload after decode: `transcribing` (speech to text, speakers become
+participants named `Speaker 1`, `Speaker 2`, ...), then `summarizing` (recap), then `ready`.
+A recording without speech is `ready` with the summary `No speech was detected in this
+recording.` Failures end as `incomplete` with the error `Transcription failed.` or
+`Could not generate the recap.`; `POST /meetings/{id}/retry` runs the failed stage again.
+Running the recap again replaces recap items and open follow-ups; follow-ups already marked
+done are kept.
+
 ## 4. Follow-ups
 
 | Method | Path | Purpose |
@@ -91,6 +164,22 @@ Meeting summary object (list item):
 | GET | `/follow-ups?owner=me|all&state=open|done` | Items with meeting title and `at_ms` |
 | PATCH | `/follow-ups/{id}` | `{"state": "done" | "open"}` |
 | GET | `/follow-ups/count` | Badge count for the sidebar |
+
+`GET /follow-ups` returns follow-ups of ready, non-deleted meetings. `owner` defaults to
+`all` (`me` keeps those whose `owner_user_id` is the signed-in user); `state` is optional
+(both states when absent). Open items come first, then newest meeting first, then `at_ms`.
+At most 500 items. Other values: `400 validation_error`.
+
+```json
+{"items": [{"id": "uuid", "text": "I will send the release note today.",
+            "owner_name": "Speaker 3", "owner_user_id": null, "at_ms": 3000,
+            "state": "open", "meeting_id": "uuid", "meeting_title": "Weekly product sync"}]}
+```
+
+`PATCH /follow-ups/{id}` (CSRF) body `{"state": "open" | "done"}` returns the same item shape;
+`done` sets `done_at`, `open` clears it. Unknown id or other organization:
+`404 follow_up_not_found`. `GET /follow-ups/count` returns `{"open_mine": 3}`: open
+follow-ups of ready meetings owned by the signed-in user.
 
 ## 5. Ask
 

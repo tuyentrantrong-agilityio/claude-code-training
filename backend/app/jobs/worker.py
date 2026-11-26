@@ -83,6 +83,8 @@ class Worker:
             job_id=job_id,
             meeting_id=job.meeting_id,
             session_factory=partial(tenant_session, schema),
+            attempts=job.attempts,
+            max_attempts=self.max_attempts,
         )
         max_attempts = self.max_attempts
         try:

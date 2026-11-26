@@ -4,6 +4,9 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
+# Marker line in the recap prompt; the fake LLM keys on it to return a recap JSON.
+RECAP_MARKER = "RECAP_JSON"
+
 
 @dataclass(frozen=True)
 class TranscriptSegment:

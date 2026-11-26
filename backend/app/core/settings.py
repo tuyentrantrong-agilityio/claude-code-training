@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
     decode_timeout_seconds: float = 1800
+    recap_max_tokens: int = 2000
     sse_poll_interval_seconds: float = 1.0
     sse_max_seconds: float = 600
 

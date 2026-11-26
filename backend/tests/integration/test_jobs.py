@@ -147,7 +147,7 @@ async def test_failing_handler_retries_then_fails(
 async def test_unknown_kind_fails_immediately(two_orgs: tuple[str, str]) -> None:
     schema = two_orgs[0]
     async with tenant_session(schema) as session:
-        job_id = await queue.enqueue(session, "recap")
+        job_id = await queue.enqueue(session, "index")
     assert await Worker(worker_id="test").run_once() == 1
     job = await _get(schema, job_id)
     assert job.state == "failed"
