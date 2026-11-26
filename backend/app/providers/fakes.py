@@ -13,6 +13,7 @@ from typing import Any
 from app.providers.base import ProviderError
 from app.providers.demo_script import ACTION_RE, SCRIPT, SCRIPT_SPEAKERS
 from app.providers.types import (
+    ASK_MARKER,
     RECAP_MARKER,
     ChatMessage,
     EmbeddingResult,
@@ -24,6 +25,8 @@ from app.providers.types import (
 
 _AT_MS_RE = re.compile(r"\[at_ms=(\d+)\]")
 _LINE_RE = re.compile(r"^\[at_ms=(\d+)\] ([^:\n]+): (.+)$", re.MULTILINE)
+_EXCERPT_RE = re.compile(r"^\[(c\d+)\] [^\n]*\n([^\n]+)", re.MULTILINE)
+EXCERPT_CHARS = 120
 DEFAULT_DURATION_MS = 60_000
 
 
@@ -179,6 +182,20 @@ def _recap_json(prompt: str) -> str:
     return json.dumps(recap)
 
 
+def _ask_answer(prompt: str) -> str:
+    """Answer an Ask prompt by quoting the first one or two excerpts and citing them."""
+    found = _EXCERPT_RE.findall(prompt)[:2]
+    if not found:
+        return "I do not have enough information to answer."
+    parts: list[str] = []
+    for label, first_line in found:
+        said = first_line.split(": ", 1)[-1].strip()
+        if len(said) > EXCERPT_CHARS:
+            said = said[:EXCERPT_CHARS].rstrip() + "..."
+        parts.append(f"{said} [{label}]")
+    return "According to the meeting, " + ". Also, ".join(parts) + "."
+
+
 class FakeLlm(_Failing):
     canned = "This is a fake response."
 
@@ -203,7 +220,9 @@ class FakeLlm(_Failing):
 
     async def stream(self, messages: list[ChatMessage], *, max_tokens: int) -> AsyncIterator[str]:
         self._maybe_fail()
-        for word in self.canned.split():
+        last_user = next((m.content for m in reversed(messages) if m.role == "user"), "")
+        text = _ask_answer(last_user) if ASK_MARKER in last_user else self.canned
+        for word in text.split():
             yield word + " "
 
 

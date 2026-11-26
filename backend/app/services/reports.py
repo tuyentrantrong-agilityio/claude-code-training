@@ -304,7 +304,11 @@ def _item(row: FollowUp, title: str) -> FollowUpItemOut:
 
 
 async def list_follow_ups(
-    session: AsyncSession, user_id: uuid.UUID, owner: Literal["me", "all"], state: str | None
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    owner: Literal["me", "all"],
+    state: str | None,
+    limit: int = MAX_FOLLOW_UPS,
 ) -> FollowUpsOut:
     stmt = _follow_up_query()
     if owner == "me":
@@ -318,7 +322,7 @@ async def list_follow_ups(
         FollowUp.at_ms.asc().nulls_last(),
         FollowUp.created_at,
         FollowUp.id,
-    ).limit(MAX_FOLLOW_UPS)
+    ).limit(min(limit, MAX_FOLLOW_UPS))
     return FollowUpsOut(items=[_item(f, t) for f, t in (await session.execute(stmt)).all()])
 
 

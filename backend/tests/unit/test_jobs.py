@@ -29,9 +29,12 @@ def test_truncate_error() -> None:
     assert len(truncate_error("x" * 5000)) == MAX_ERROR_LENGTH
 
 
+# "index" has a handler now, so the test uses a kind that does not exist.
 async def test_unknown_kind_raises_clear_error() -> None:
-    with pytest.raises(UnknownJobKindError, match="no handler registered for job kind 'index'"):
-        await dispatch("index", _ctx())
+    with pytest.raises(
+        UnknownJobKindError, match="no handler registered for job kind 'unknown_kind'"
+    ):
+        await dispatch("unknown_kind", _ctx())
 
 
 async def test_dispatch_runs_registered_handler() -> None:

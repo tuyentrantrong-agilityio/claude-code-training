@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
+    Computed,
     ForeignKey,
     Index,
     Integer,
@@ -14,8 +15,9 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import TIMESTAMP, UUID
+from sqlalchemy.dialects.postgresql import TIMESTAMP, TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import UserDefinedType
 
 from app.db.base import OrgBase
 
@@ -205,5 +207,95 @@ class UsageEvent(OrgBase):
     provider: Mapped[str | None] = mapped_column(Text)
     units: Mapped[Decimal | None] = mapped_column(Numeric)
     unit_kind: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class Vector(UserDefinedType[list[float]]):
+    """pgvector column without a fixed dimension.
+
+    Values are written and read with SQL (see app/services/ask.py); the ORM never loads it.
+    """
+
+    cache_ok = True
+
+    def get_col_spec(self, **kw: object) -> str:
+        return "vector"
+
+
+class SearchChunk(OrgBase):
+    __tablename__ = "search_chunks"
+    __table_args__ = (
+        UniqueConstraint("meeting_id", "seq"),
+        Index("ix_search_chunks_tsv", "tsv", postgresql_using="gin"),
+        Index("ix_search_chunks_meeting_id", "meeting_id"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    meeting_id: Mapped[uuid.UUID] = _meeting_fk()
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    end_ms: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    tsv: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed("to_tsvector('simple', text)", persisted=True), deferred=True
+    )
+    embedding: Mapped[list[float] | None] = mapped_column(Vector, deferred=True)
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class Conversation(OrgBase):
+    __tablename__ = "conversations"
+    __table_args__ = (
+        Index("ix_conversations_user_id_updated_at", "user_id", text("updated_at DESC")),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    scope_meeting_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("meetings.id", ondelete="SET NULL")
+    )
+    title: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class Message(OrgBase):
+    __tablename__ = "messages"
+    __table_args__ = (
+        CheckConstraint("role IN ('user', 'assistant')", name="role"),
+        CheckConstraint("status IN ('streaming', 'done', 'failed')", name="status"),
+        Index("ix_messages_conversation_id_created_at", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(Text, nullable=False)
+    text: Mapped[str] = mapped_column(Text, server_default="", nullable=False)
+    status: Mapped[str] = mapped_column(Text, server_default="done", nullable=False)
+    created_at: Mapped[datetime] = _created()
+    updated_at: Mapped[datetime] = _updated()
+
+
+class Citation(OrgBase):
+    __tablename__ = "citations"
+    __table_args__ = (
+        Index("ix_citations_message_id", "message_id"),
+        Index("ix_citations_meeting_id", "meeting_id"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("messages.id", ondelete="CASCADE"), nullable=False
+    )
+    meeting_id: Mapped[uuid.UUID] = _meeting_fk()
+    chunk_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("search_chunks.id", ondelete="SET NULL")
+    )
+    at_ms: Mapped[int | None] = mapped_column(Integer)
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = _created()
     updated_at: Mapped[datetime] = _updated()

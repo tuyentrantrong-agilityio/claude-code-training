@@ -150,10 +150,10 @@ out. The slug is the lowercase ASCII title (accents removed, other characters `-
 60 characters, `meeting` when empty).
 
 Processing of an upload after decode: `transcribing` (speech to text, speakers become
-participants named `Speaker 1`, `Speaker 2`, ...), then `summarizing` (recap), then `ready`.
-A recording without speech is `ready` with the summary `No speech was detected in this
+participants named `Speaker 1`, `Speaker 2`, ...), then `summarizing` (recap), then `filing` (search index: transcript chunks and their
+embeddings), then `ready`. A recording without speech is `ready` with the summary `No speech was detected in this
 recording.` Failures end as `incomplete` with the error `Transcription failed.` or
-`Could not generate the recap.`; `POST /meetings/{id}/retry` runs the failed stage again.
+`Could not generate the recap.` or `Could not index the meeting for search.`; `POST /meetings/{id}/retry` runs the failed stage again.
 Running the recap again replaces recap items and open follow-ups; follow-ups already marked
 done are kept.
 
@@ -183,15 +183,70 @@ follow-ups of ready meetings owned by the signed-in user.
 
 ## 5. Ask
 
+All routes need a signed-in user and are scoped to the organization of the session.
+Conversations belong to the user who created them: another user (or another organization)
+gets `404 conversation_not_found`. State-changing requests need the CSRF header.
+
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/conversations` | Chat list (title, updated_at) |
-| POST | `/conversations` | `{"scope_meeting_id": null | "uuid"}` |
+| GET | `/conversations` | Chat list, newest first |
+| POST | `/conversations` | `{"scope_meeting_id": null | "uuid"}`; returns 201 |
 | GET | `/conversations/{id}` | Messages with citations |
-| POST | `/conversations/{id}/messages` | `{"text": "..."}`; response is an SSE stream |
-| DELETE | `/conversations/{id}` | Delete a chat |
+| POST | `/conversations/{id}/messages` | `{"text": "..."}` (1 to 2000 characters after trimming); response is an SSE stream |
+| DELETE | `/conversations/{id}` | Delete a chat; returns 204 |
 
-SSE events for an answer:
+`GET /conversations` returns `{"items": [conversation, ...]}` ordered by `updated_at`
+(newest first). `POST /conversations` returns one conversation; a `scope_meeting_id` that is
+not a meeting of the organization is `404 meeting_not_found`. When a scoped meeting is
+deleted the chat stays and `scope_meeting_id` becomes `null`.
+
+```json
+{"id": "uuid", "title": "What did Marketing say about the zeb", "scope_meeting_id": null,
+ "updated_at": "2026-11-26T03:00:00Z"}
+```
+
+`title` is `null` until the first question; then it is the first 60 characters of that
+question (whitespace collapsed). `updated_at` changes on every question and answer.
+
+`GET /conversations/{id}` (messages ordered by creation time, the question before its
+answer; `citations` ordered by `seq`, empty for questions and failed answers):
+
+```json
+{"id": "uuid", "title": "...", "scope_meeting_id": null,
+ "messages": [
+   {"id": "uuid", "role": "user", "text": "What did Marketing say?", "status": "done",
+    "created_at": "2026-11-26T03:00:00Z", "citations": []},
+   {"id": "uuid", "role": "assistant", "text": "Marketing wants the campaign finished.",
+    "status": "done", "created_at": "2026-11-26T03:00:02Z",
+    "citations": [{"meeting_id": "uuid", "meeting_title": "Planning", "at_ms": 1000}]}
+ ]}
+```
+
+`role` is `user` or `assistant`; `status` is `streaming`, `done` or `failed`. The stored
+assistant text has the `[cN]` chunk labels removed.
+
+How a question is answered (`POST /conversations/{id}/messages`):
+
+1. The question is saved and the chat title is set when empty.
+2. Retrieval over meetings with status `ready` that are not deleted (only the scoped
+   meeting when the chat has a scope): full-text search (`plainto_tsquery('simple', ...)`,
+   `ts_rank`, top 20) and exact cosine search on the chunk embeddings (top 20), merged with
+   reciprocal rank fusion (k = 60). The top 8 chunks are used.
+3. No chunk found: one `token` event with `I could not find that in your meetings. Try
+   different words, or ask across all meetings.` (`in this meeting.` for a scoped chat),
+   then `citations` with an empty list, then `done`. The LLM is not called.
+4. Otherwise the chunks are sent to the LLM labelled `[c1]` to `[cN]` (meeting title and
+   `mm:ss` each) with the instruction to answer only from them and cite labels. Every piece
+   of the answer is forwarded as a `token` event. After the stream ends, the labels the
+   model used are mapped back to chunks (unknown labels dropped, duplicates removed, order
+   of first use kept). `citations` has one item per cited chunk, `at_ms` is the start of
+   that chunk, and `done` carries the id of the stored assistant message. The answer and
+   its citations are stored before `citations` and `done` are sent.
+5. If the embedding or LLM provider fails, `error` is sent instead of `citations` and
+   `done`, and the assistant message is stored with status `failed` (the text received so
+   far is kept).
+
+The stream is `text/event-stream`; every event has one JSON `data` line:
 
 ```
 event: token
@@ -204,14 +259,40 @@ event: done
 data: {"message_id": "uuid"}
 
 event: error
-data: {"code": "provider_unavailable", "message": "..."}
+data: {"code": "provider_unavailable", "message": "The assistant is unavailable right now. Try again."}
 ```
+
+Token text is sent as the model produced it, so it can still contain `[cN]` labels; the
+client may hide them, the stored text has them removed.
+
+Search data: a meeting is split into chunks of consecutive transcript segments (about 60
+seconds or 800 characters, lines `Speaker: text`). The embedding column has no fixed
+dimension until the embedding provider is chosen, so search is an exact scan; add an HNSW
+index after fixing the dimension.
 
 ## 6. Home
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/home` | `{needs_you: [...max 4], recent_meetings: [...max 3], has_any_meeting: bool}` |
+
+`needs_you` are the open follow-ups owned by the signed-in user (same order and item shape
+as `GET /follow-ups`, ready and non-deleted meetings only), at most 4.
+`recent_meetings` are the 3 newest ready meetings (same item shape as `GET /meetings`).
+`has_any_meeting` is true when the organization has any non-deleted meeting, in any status.
+
+```json
+{"needs_you": [{"id": "uuid", "text": "I will send the release note today.",
+                "owner_name": "Maya Chen", "owner_user_id": "uuid", "at_ms": 3000,
+                "state": "open", "meeting_id": "uuid", "meeting_title": "Weekly product sync"}],
+ "recent_meetings": [{"id": "uuid", "title": "Weekly product sync", "status": "ready",
+                      "stage": null, "error": null, "source": "upload", "platform": "file",
+                      "language": "en", "started_at": "2026-11-19T03:00:00Z",
+                      "duration_ms": 1860000, "summary_preview": "The team reviewed ...",
+                      "participants": [{"id": "uuid", "display_name": "Maya Chen"}],
+                      "folder": null}],
+ "has_any_meeting": true}
+```
 
 ## 7. Admin (MVP part, owners only)
 

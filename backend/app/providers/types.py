@@ -6,6 +6,8 @@ from typing import Literal
 
 # Marker line in the recap prompt; the fake LLM keys on it to return a recap JSON.
 RECAP_MARKER = "RECAP_JSON"
+# Marker line in the Ask prompt; the fake LLM keys on it to answer from the excerpts.
+ASK_MARKER = "ASK_CONTEXT"
 
 
 @dataclass(frozen=True)

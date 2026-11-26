@@ -64,10 +64,10 @@ def use_stt(monkeypatch: pytest.MonkeyPatch, factory: Any) -> None:
 
 
 async def process(client: AsyncClient, headers: dict[str, str], seconds: int = 8) -> str:
-    """Upload a WAV and run decode, transcribe and recap; return the meeting id."""
+    """Upload a WAV and run decode, transcribe, recap and index; return the meeting id."""
     response = await upload(client, headers, make_wav(seconds), title="Release sync")
     assert response.status_code == 201
-    await run_worker(3)
+    await run_worker(4)
     return str(response.json()["id"])
 
 
@@ -97,7 +97,7 @@ async def test_full_pipeline_and_read_apis(client: AsyncClient, google: FakeGoog
         "Speaker 3",
     ]
     assert detail["summary"] and detail["summary_preview"]
-    assert [k for k, _ in await jobs(org.schema_name)] == ["decode", "transcribe", "recap"]
+    assert [k for k, _ in await jobs(org.schema_name)] == ["decode", "transcribe", "recap", "index"]
 
     # transcript
     segments = (await client.get(f"{base}/transcript")).json()["segments"]
@@ -370,7 +370,7 @@ async def test_recap_retry_keeps_user_edits_and_done_follow_ups(
 
     async with tenant_session(org.schema_name) as session:
         await queue.enqueue(session, "recap", uuid.UUID(meeting_id))
-    await run_worker()
+    await run_worker(2)  # recap, then index
     after = (await client.get(f"{base}/recap")).json()
     assert after["summary"] == "My own words." and after["summary_edited_at"] == stamp
     assert len(after["follow_ups"]) == len(before["follow_ups"])  # no duplicates
@@ -394,7 +394,7 @@ async def test_transcribe_again_replaces_transcript(
         segments = await session.scalar(select(func.count()).select_from(TranscriptSegment))
         people = await session.scalar(select(func.count()).select_from(MeetingParticipant))
     assert (segments, people) == (8, 3)
-    await run_worker()
+    await run_worker(2)  # recap, then index
     assert (await client.get(f"{MEETINGS}/{meeting_id}")).json()["status"] == "ready"
 
 
@@ -444,7 +444,7 @@ async def test_invalid_recap_json_retries_once_then_incomplete(
     use_llm(monkeypatch, RECAP_REPLY)
     retry = await client.post(f"{MEETINGS}/{meeting_id}/retry", headers=headers)
     assert retry.status_code == 200
-    await run_worker()
+    await run_worker(2)  # recap, then index
     assert (await client.get(f"{MEETINGS}/{meeting_id}")).json()["status"] == "ready"
 
 

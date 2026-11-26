@@ -44,7 +44,7 @@ rebuilt from the Recapz design prototype. FastAPI backend, React frontend, Postg
 - Backend: routers thin, logic in `app/services`, every org query inside the tenant
   scope, times inside a recording in milliseconds (`*_ms`), errors in the format of
   `05-api-contract.md`.
-- Frontend: TypeScript strict, TanStack Query for server state, components named after
+- Frontend: TypeScript strict, server state through the small useLoad hook (src/lib/useLoad.ts), components named after
   the prototype.
 - Tests never call paid AI providers; use the fake adapters.
 

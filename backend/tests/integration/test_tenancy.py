@@ -35,7 +35,7 @@ async def test_org_schema_has_own_version_table(two_orgs: tuple[str, str]) -> No
         version = await session.scalar(
             text(f'SELECT version_num FROM "{two_orgs[0]}".alembic_version')
         )
-    assert version == "0001_org"
+    assert version == "0002_search_and_ask"  # head after the Ask migration
 
 
 async def test_segment_seq_is_unique(two_orgs: tuple[str, str]) -> None:

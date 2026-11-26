@@ -129,10 +129,13 @@ async def test_upload_decode_and_ready(
     assert (storage_dir / org.schema_name / str(meeting_id) / "audio.wav").is_file()
     assert await jobs(org.schema_name) == [("decode", "succeeded"), ("transcribe", "queued")]
 
-    # The transcribe job now queues the recap job; the meeting is ready after both.
+    # Transcribe queues recap, recap queues index; the meeting is ready after the index job.
     await run_worker()
     detail = (await client.get(f"{MEETINGS}/{meeting_id}")).json()
     assert (detail["status"], detail["stage"]) == ("processing", "summarizing")
+    await run_worker()
+    detail = (await client.get(f"{MEETINGS}/{meeting_id}")).json()
+    assert (detail["status"], detail["stage"]) == ("processing", "filing")
     await run_worker()
     detail = (await client.get(f"{MEETINGS}/{meeting_id}")).json()
     assert (detail["status"], detail["stage"]) == ("ready", None)
@@ -420,7 +423,7 @@ async def test_events_stream_until_ready(client: AsyncClient, google: FakeGoogle
     meeting_id = (await upload(client, headers)).json()["id"]
 
     async def drive() -> None:
-        for _ in range(3):  # decode, transcribe, recap
+        for _ in range(4):  # decode, transcribe, recap, index
             await asyncio.sleep(0.3)
             await run_worker()
 

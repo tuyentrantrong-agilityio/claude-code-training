@@ -84,6 +84,11 @@ describe('routing', () => {
   });
 
   it('shows the first-time start cards on Home', async () => {
+    // Home now loads GET /home; the start cards show when no meeting exists yet.
+    mockFetch({
+      'GET /me': { body: ownerMe },
+      'GET /home': { body: { needs_you: [], recent_meetings: [], has_any_meeting: false } },
+    });
     renderAt('/home');
     expect(await screen.findByRole('link', { name: /Connect your calendar/ })).toHaveAttribute(
       'href',
